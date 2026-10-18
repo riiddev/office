@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { ARCADES, BALCONY, BALCONY_DOOR, BALCONY_TABLE, BATHROOM, BEANBAGS, CARROM, COFFEE_TABLE, ENTRANCE_X, FLAG, FLOOR_HEIGHT, type Floor as FloorNumber, GAME_DOOR, GAME_ROOM, GAME_TV, HAMMOCK, LESEHAN_TABLE, LOUNGE_PARTITION_END_Z, MEETING_DOOR_X, PARTITION_X, PING_PONG, SOFA, STAIRS, STALL_ROTATION, type OfficeLayout, TV, type Vec3 } from '../office3d-layout.ts'
+import { ARCADES, BALCONY, BALCONY_DOOR, BALCONY_TABLE, BATHROOM, BEANBAGS, CARROM, COFFEE_TABLE, ENTRANCE_X, FLAG, FLOOR_HEIGHT, type Floor as FloorNumber, GAME_DOOR, GAME_ROOM, GAME_TV, HAMMOCK, MUSHOLLA, DINING, LOUNGE_PARTITION_END_Z, MEETING_DOOR_X, PARTITION_X, PING_PONG, SOFA, STAIRS, STALL_ROTATION, type OfficeLayout, TV, type Vec3 } from '../office3d-layout.ts'
 import { AcOutdoorUnit, AirConditioner, ArcadeCabinet, Armchair, BathroomFittings, Beanbag, Bed, Bookshelf, CarromTable, ClothesLine, CoffeeTable, FlagPole, FloorCushion, Fridge, GalonDispenser, Gerobak, Hammock, KopiSepeda, LongTable, LowTable, Nightstand, OfficeChair, OfficeLight, PantryCounter, PingPongTable, Plant, Railing, RattanChair, RBox, SideTable, Sofa, Staircase, StreetLamp, StringLights, Television, Tree, Vendor, WallClock, Wardrobe, WaterTank, Whiteboard } from './props.tsx'
 import { asphalt, carpet, grass, pavingStones, tileFloor, woodFloor } from './textures.ts'
 
@@ -205,12 +205,60 @@ function BuildingShell({ night, layout }: { night: boolean; layout: OfficeLayout
   </group>
 }
 
-/** Lantai 2: dorm bedroom, lesehan corner, bathroom, and the balcony over the front. */
+/** Dedicated upstairs prayer room with parallel mats, a shared qibla wall and a clear doorway. */
+function Musholla() {
+  const left = MUSHOLLA.x - 2.45
+  const right = MUSHOLLA.x + 2.45
+  const back = MUSHOLLA.z - 2.35
+  const front = MUSHOLLA.z + 2.35
+  const doorwayHalf = 1.0
+  const mats = Array.from({ length: MUSHOLLA.capacity }, (_, index) => {
+    const row = Math.floor(index / MUSHOLLA.columns)
+    const column = index % MUSHOLLA.columns
+    return {
+      index, row,
+      x: MUSHOLLA.x + (column - (MUSHOLLA.columns - 1) / 2) * MUSHOLLA.columnSpacing,
+      z: MUSHOLLA.z - 1.0 + row * MUSHOLLA.rowSpacing,
+    }
+  })
+  return <group>
+    <Wall from={[left, back]} to={[right, back]} height={1.4}/>
+    <Wall from={[left, back]} to={[left, front]} height={1.4}/>
+    <Wall from={[right, back]} to={[right, front]} height={1.4}/>
+    <Wall from={[left, front]} to={[MUSHOLLA.x - doorwayHalf, front]} height={1.4}/>
+    <Wall from={[MUSHOLLA.x + doorwayHalf, front]} to={[right, front]} height={1.4}/>
+    {/* Mihrab marks the shared qibla direction. It sits on the back wall, away from the doorway. */}
+    <RBox position={[MUSHOLLA.x, 0.9, back + 0.1]} size={[1.35, 1.05, 0.12]} radius={0.04} color="#285547"/>
+    <RBox position={[MUSHOLLA.x, 1.05, back + 0.17]} size={[0.72, 0.04, 0.035]} radius={0.01} color="#e5d4a3" shadow={false}/>
+    {mats.map(({ index, row, x, z }) => <group key={index} position={[x, 0, z]}>
+      <RBox position={[0, 0.028, 0]} size={[0.68, 0.035, 0.82]} radius={0.025} color={row % 2 === 0 ? '#4b8b71' : '#387761'} roughness={0.98}/>
+      <RBox position={[0, 0.049, -0.34]} size={[0.58, 0.008, 0.025]} radius={0.006} color="#d8c898" shadow={false}/>
+      <RBox position={[-0.27, 0.049, 0]} size={[0.025, 0.008, 0.76]} radius={0.006} color="#d8c898" shadow={false}/>
+      <RBox position={[0.27, 0.049, 0]} size={[0.025, 0.008, 0.76]} radius={0.006} color="#d8c898" shadow={false}/>
+    </group>)}
+  </group>
+}
+
+/** Two dining tables with twelve distinct chair/seat positions and tableware. */
+function DiningRoom() {
+  return <group>
+    {DINING.tableCenters.map((centerX, tableIndex) => <group key={centerX}>
+      <RBox position={[centerX, 0.77, DINING.z]} size={[DINING.length, 0.08, DINING.width]} radius={0.04} color="#a8784d" roughness={0.68}/>
+      {[-1, 1].flatMap((xSide) => [-1, 1].map((zSide) => <RBox key={`leg-${xSide}-${zSide}`} position={[centerX + xSide * (DINING.length / 2 - 0.09), 0.37, DINING.z + zSide * (DINING.width / 2 - 0.09)]} size={[0.08, 0.74, 0.08]} radius={0.02} color="#775234"/>))}
+      {DINING.seatOffsets.map((offset, index) => <RBox key={`plate-${index}`} position={[centerX + offset, 0.825, DINING.z]} size={[0.24, 0.015, 0.18]} radius={0.035} color="#f1ead8" shadow={false}/>)}
+      {DINING.seatOffsets.map((offset, index) => <OfficeChair key={`front-${index}`} position={[centerX + offset, 0, DINING.z - 0.86]} rotation={0} color="#6c8b68"/>)}
+      {DINING.seatOffsets.map((offset, index) => <OfficeChair key={`back-${index}`} position={[centerX + offset, 0, DINING.z + 0.86]} rotation={Math.PI} color="#6c8b68"/>)}
+      <RBox position={[centerX, 1.12, DINING.z - 0.5]} size={[0.5, 0.035, 0.035]} radius={0.01} color={tableIndex === 0 ? '#e3c66a' : '#8fc4a4'} shadow={false}/>
+    </group>)}
+  </group>
+}
+
+/** Lantai 2: bedroom, dedicated musholla, dining room, bathroom, and balcony. */
 function UpperFloor({ night, layout }: { night: boolean; layout: OfficeLayout }) {
   const { minX, maxX, minZ, maxZ } = layout.building
   const wood = useMemo(() => woodFloor([4, 4]), [])
   const bedroomRug = useMemo(() => carpet('#6d5a8c', [3, 3]), [])
-  const lesehanRug = useMemo(() => carpet('#8c3b3b', [2, 2]), [])
+  const mushollaRug = useMemo(() => carpet('#285e50', [3, 3]), [])
   const tiles = useMemo(() => tileFloor([2, 2]), [])
   const balconyTiles = useMemo(() => tileFloor([6, 1]), [])
   // The slab, leaving the stairwell open: [minX, maxX, minZ, maxZ] pieces.
@@ -232,7 +280,7 @@ function UpperFloor({ night, layout }: { night: boolean; layout: OfficeLayout })
       {slab.slice(0, 4).map(([x1, x2, z1, z2]) => <Floor key={`f${x1},${z1}`} position={[(x1 + x2) / 2, 0.005, (z1 + z2) / 2]} size={[x2 - x1, z2 - z1]} map={wood} roughness={0.55}/>)}
       <Floor position={[(minX + maxX) / 2, 0.005, (BALCONY.minZ + BALCONY.maxZ) / 2]} size={[maxX - minX, BALCONY.maxZ - BALCONY.minZ]} map={balconyTiles} roughness={0.5}/>
       <Floor position={[(minX + PARTITION_X) / 2, 0.012, -2.4]} size={[PARTITION_X - minX - 0.4, 5]} map={bedroomRug}/>
-      <Floor position={[LESEHAN_TABLE[0], 0.012, LESEHAN_TABLE[2]]} size={[3.4, 2.8]} map={lesehanRug}/>
+      <Floor position={[MUSHOLLA.x, 0.012, MUSHOLLA.z]} size={[4.85, 4.85]} map={mushollaRug}/>
       <Floor position={[(BATHROOM.minX + BATHROOM.maxX) / 2, 0.012, (BATHROOM.minZ + BATHROOM.maxZ) / 2]} size={[BATHROOM.maxX - BATHROOM.minX, BATHROOM.maxZ - BATHROOM.minZ]} map={tiles} roughness={0.3}/>
       {/* Walls: full at the back and sides, glass sliding doors onto the balcony */}
       <Wall from={[minX, minZ]} to={[maxX, minZ]}/>
@@ -253,8 +301,8 @@ function UpperFloor({ night, layout }: { night: boolean; layout: OfficeLayout })
       <Wardrobe position={[minX + 0.4, 0, 2.8]} rotation={Math.PI / 2}/>
       <AirConditioner position={[(minX + PARTITION_X) / 2, 2.3, minZ + 0.125]}/>
       {/* Lesehan corner */}
-      <LowTable position={[LESEHAN_TABLE[0], 0, LESEHAN_TABLE[2]]}/>
-      {[[-1, 0, '#e9c46a'], [1, 0, '#2a9d8f'], [0, -0.85, '#e76f51'], [0, 0.85, '#3d7fd6']].map(([dx, dz, color]) => <FloorCushion key={color as string} position={[LESEHAN_TABLE[0] + (dx as number), 0, LESEHAN_TABLE[2] + (dz as number)]} color={color as string}/>)}
+      <Musholla/>
+      <DiningRoom/>
       <Bookshelf position={[6.5, 0, minZ + 0.3]}/>
       <Plant position={[1.1, 0, minZ + 0.5]} size={0.9}/>
       <Plant position={[7.1, 0, 1.4]}/>
@@ -266,7 +314,7 @@ function UpperFloor({ night, layout }: { night: boolean; layout: OfficeLayout })
       {/* Railing around the stairwell */}
       <Railing position={[(hole.minX + hole.maxX) / 2, 0, hole.minZ]} length={hole.maxX - hole.minX}/>
       <Railing position={[hole.maxX, 0, STAIRS.z]} length={hole.maxZ - hole.minZ} rotation={Math.PI / 2}/>
-      {[...layout.beds.filter((_, index) => index % 2 === 0).map(([x, , z]): Vec3 => [x, 2.4, z + 0.6]), [LESEHAN_TABLE[0], 2.4, LESEHAN_TABLE[2]] as Vec3, [doorX, 2.4, 2] as Vec3].map((position) => <OfficeLight key={position.join(',')} position={position} night={night}/>)}
+      {[...layout.beds.filter((_, index) => index % 2 === 0).map(([x, , z]): Vec3 => [x, 2.4, z + 0.6]), [MUSHOLLA.x, 2.4, MUSHOLLA.z] as Vec3, [doorX, 2.4, 2] as Vec3].map((position) => <OfficeLight key={position.join(',')} position={position} night={night}/>)}
       {/* Balcony */}
       <Railing position={[(minX + maxX) / 2, 0, BALCONY.maxZ - 0.05]} length={maxX - minX}/>
       <Railing position={[minX + 0.05, 0, (BALCONY.minZ + BALCONY.maxZ) / 2]} length={BALCONY.maxZ - BALCONY.minZ} rotation={Math.PI / 2}/>
