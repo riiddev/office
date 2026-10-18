@@ -174,6 +174,9 @@ export function createOffice(host, { onSelect } = {}) {
   makeDesk(-6.7, -2.45, '#e8ae77', 'Creative');
   makeDesk(-3.5, -2.45, '#8fc3b5', 'Developer');
   makeDesk(-0.25, -2.45, '#b8a5dd', 'Designer');
+  makeDesk(-6.7, -5.9, '#d9a0ac', 'QA pod');
+  makeDesk(-3.5, -5.9, '#91a4d1', 'Product pod');
+  makeDesk(-0.25, -5.9, '#c4a77b', 'Release pod');
   makeDesk(3.0, -5.9, '#e6b172', 'Research pod');
   makeDesk(6.05, -5.9, '#83a8d3', 'Design pod');
   makeDesk(9.1, -5.9, '#80b6a4', 'Operations pod');
@@ -601,15 +604,15 @@ export function createOffice(host, { onSelect } = {}) {
   // believable workplace: active agents stay by their own workstation, review
   // agents hold a review pose, and idle agents wander through the social spaces.
   const movementPlans = {
-    forge: { position: [-6.7, -0.62], face: Math.PI, mode: 'work', stationary: true },
-    scout: { position: [9.35, 5.75], face: Math.PI, mode: 'review', stationary: true },
+    forge: { position: [-6.7, -0.8], face: Math.PI, mode: 'work', stationary: true },
+    scout: { position: [-3.5, -0.8], face: Math.PI, mode: 'review', stationary: true },
     pixel: { position: [4.2, 1.8], mode: 'wander', points: waypoints[2], target: 1, speed: 0.62 },
     orbit: { position: [3.45, -0.3], mode: 'wander', points: waypoints[3], target: 1, speed: 0.58 },
-    guard: { position: [-4.7, 3.8], face: Math.PI / 2, mode: 'waiting', stationary: true },
-    nova: { position: [3.0, -3.86], face: Math.PI, mode: 'work', stationary: true },
-    patch: { position: [6.05, -3.86], face: Math.PI, mode: 'work', stationary: true },
-    muse: { position: [-0.25, -0.62], face: Math.PI, mode: 'review', stationary: true },
-    moss: { position: [9.1, -3.86], face: Math.PI, mode: 'waiting', stationary: true }
+    guard: { position: [-6.7, -4.25], face: Math.PI, mode: 'waiting', stationary: true },
+    nova: { position: [-3.5, -4.25], face: Math.PI, mode: 'work', stationary: true },
+    patch: { position: [3.0, -4.25], face: Math.PI, mode: 'work', stationary: true },
+    muse: { position: [6.05, -4.25], face: Math.PI, mode: 'review', stationary: true },
+    moss: { position: [-0.25, -4.25], face: Math.PI, mode: 'waiting', stationary: true }
   };
   // Navigation mesh: padded furniture footprints and room partitions. All agents
   // use the same route planner so their paths bend around props instead of
@@ -642,12 +645,17 @@ export function createOffice(host, { onSelect } = {}) {
     { x1: -8.34, x2: -5.06, z1: -3.5, z2: -0.65 },
     { x1: -5.56, x2: -1.45, z1: -3.5, z2: -0.65 },
     { x1: -2.3, x2: 1.8, z1: -3.5, z2: -0.65 },
+    { x1: -8.34, x2: -5.06, z1: -6.9, z2: -4.1 },
+    { x1: -5.56, x2: -1.45, z1: -6.9, z2: -4.1 },
+    { x1: -2.3, x2: 1.8, z1: -6.9, z2: -4.1 },
     { x1: 1.33, x2: 4.7, z1: -6.9, z2: -4.1 },
     { x1: 4.38, x2: 7.76, z1: -6.9, z2: -4.1 },
     { x1: 7.42, x2: 10.8, z1: -6.9, z2: -4.1 },
     // Glass pod dividers between workstations.
     { x1: -5.12, x2: -4.88, z1: -3.96, z2: -1.96 },
     { x1: -1.94, x2: -1.7, z1: -3.96, z2: -1.96 },
+    { x1: -5.12, x2: -4.88, z1: -6.31, z2: -4.39 },
+    { x1: -1.94, x2: -1.7, z1: -6.31, z2: -4.39 },
     { x1: 1.3, x2: 1.54, z1: -6.31, z2: -4.39 },
     { x1: 4.44, x2: 4.68, z1: -6.31, z2: -4.39 },
     { x1: 7.56, x2: 7.8, z1: -6.31, z2: -4.39 },
