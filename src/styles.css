@@ -432,7 +432,7 @@ h2 { font: 700 21px/1.2 Manrope, sans-serif; letter-spacing: -.7px; margin-botto
 /* -------------------------------------------------------------------------
    BOSS MODE — warmer editorial surfaces, spacious stage, lively HQ details
    ------------------------------------------------------------------------- */
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+
 
 .hq-shell {
   max-width: 1920px;
