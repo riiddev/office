@@ -11,10 +11,10 @@ const rooms = [
   { id: 'pantry', label: 'Pantry', icon: '☕' },
 ];
 const tasks = [
-  { id: 'DEV-014', title: 'Refactor landing page components', agentId: 'forge', status: 'working', category: 'Development', progress: 68 },
-  { id: 'RES-008', title: 'Summarize visual references', agentId: 'scout', status: 'review', category: 'Research', progress: 92 },
-  { id: 'QA-003', title: 'Check responsive layouts', agentId: 'guard', status: 'blocked', category: 'Quality', progress: 35 },
-  { id: 'DES-021', title: 'Prepare next visual direction', agentId: 'pixel', status: 'queued', category: 'Design', progress: 0 },
+  { id: 'DEV-014', title: 'Refactor landing page components', agentId: 'forge', status: 'working', category: 'Development', priority: 'high', progress: 68 },
+  { id: 'RES-008', title: 'Summarize visual references', agentId: 'scout', status: 'review', category: 'Research', priority: 'normal', progress: 92 },
+  { id: 'QA-003', title: 'Check responsive layouts', agentId: 'guard', status: 'blocked', category: 'Quality', priority: 'normal', progress: 35 },
+  { id: 'DES-021', title: 'Prepare next visual direction', agentId: 'pixel', status: 'queued', category: 'Design', priority: 'low', progress: 0 },
 ];
 const activity = [
   { time: 'Just now', agentId: 'forge', title: 'Updated components', detail: 'Refactoring the landing page', tone: 'working' },
@@ -76,7 +76,7 @@ function App() {
       'Keep API keys and credentials on the local bridge; never put them in browser code.',
       'Start with read-only status, task summaries and recent events before adding task execution.',
       'Potential adapters: OpenCode and OpenClaw.',
-    ].join('\\n');
+    ].join('\n');
     try { await navigator.clipboard.writeText(notes); setCopied(true); }
     catch { setCopied(false); }
   };
@@ -152,7 +152,7 @@ function App() {
         <div className="hq-task-list">{tasks.map((task) => {
           const agent = agents.find((item) => item.id === task.agentId);
           return <button key={task.id} className="hq-task-row" onClick={() => agent && chooseAgent(agent)}>
-            <span className={`task-priority priority-${task.category.toLowerCase()}`} />
+            <span className={`task-priority priority-${task.priority}`} />
             <span className="hq-task-content"><span className="hq-task-meta"><small>{task.id}</small><span>{task.category}</span></span><strong>{task.title}</strong><span className="hq-task-owner"><AgentAvatar agent={agent} compact /> {agent.name}</span></span>
             <span className="hq-task-end"><StatusBadge status={task.status} /><span className="task-progress-value">{task.progress ? `${task.progress}%` : '—'}</span></span>
           </button>;
