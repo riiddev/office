@@ -936,7 +936,7 @@ export function createOffice(host, { onSelect } = {}) {
             bossHead.rotation.y = Math.sin(elapsed * 0.75) * 0.04;
           }
         }
-      }      } else {
+      } else {
         bossMotion.wait = Math.max(0, bossMotion.wait - delta);
         if (bossMotion.wait <= 0) {
           bossMotion.target = (bossMotion.target + 1) % bossRoute.length;
