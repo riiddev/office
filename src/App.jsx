@@ -42,7 +42,11 @@ function App() {
   const [activeRoom, setActiveRoom] = useState('all');
   const [selectedAgentId, setSelectedAgentId] = useState('forge');
   const [showConnect, setShowConnect] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [accessToken, setAccessToken] = useState('');
+  const [taskPrompt, setTaskPrompt] = useState('');
+  const [dispatchState, setDispatchState] = useState('idle');
+  const [dispatchError, setDispatchError] = useState('');
+  const [dispatchResult, setDispatchResult] = useState(null);
   const [clock, setClock] = useState(() => new Date());
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) || agents[0];
   const counts = useMemo(() => ({
@@ -68,17 +72,30 @@ function App() {
 
   const chooseRoom = (room) => { setActiveRoom(room); office.current?.focusRoom(room); };
   const chooseAgent = (agent) => { setSelectedAgentId(agent.id); chooseRoom(agent.room || 'all'); };
-  const copyConnectionNotes = async () => {
-    const notes = [
-      'Riiddev Agent HQ — local bridge plan',
-      'Current UI is a demo preview; no agents are connected.',
-      'Add a localhost Node.js bridge to read status and task metadata from a chosen agent runtime.',
-      'Keep API keys and credentials on the local bridge; never put them in browser code.',
-      'Start with read-only status, task summaries and recent events before adding task execution.',
-      'Potential adapters: OpenCode and OpenClaw.',
-    ].join('\n');
-    try { await navigator.clipboard.writeText(notes); setCopied(true); }
-    catch { setCopied(false); }
+  const submitTask = async (event) => {
+    event.preventDefault();
+    if (dispatchState === 'sending') return;
+    setDispatchState('sending');
+    setDispatchError('');
+    setDispatchResult(null);
+    try {
+      const response = await fetch('/api/agent-tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + accessToken.trim(),
+        },
+        body: JSON.stringify({ prompt: taskPrompt.trim() }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || ('Request failed (HTTP ' + response.status + ').'));
+      setDispatchResult(result);
+      setDispatchState('success');
+      setTaskPrompt('');
+    } catch (error) {
+      setDispatchError(error instanceof Error ? error.message : 'Something went wrong. Try again.');
+      setDispatchState('error');
+    }
   };
   const time = clock.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
   const date = clock.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -93,7 +110,7 @@ function App() {
       <div className="topbar-actions">
         <div className="clock"><strong>{time}</strong><span>{date}</span></div>
         <button className="theme-toggle" onClick={() => setNight((value) => !value)} aria-label={night ? 'Switch to daytime' : 'Switch to nighttime'} title="Toggle day / night"><span>{night ? '☼' : '☾'}</span><small>{night ? 'Day' : 'Night'}</small></button>
-        <button className="connect-button" onClick={() => setShowConnect(true)}><span>＋</span> Connect agent</button>
+        <button className="connect-button" onClick={() => setShowConnect(true)}><span>＋</span> Run cloud task</button>
       </div>
     </header>
 
@@ -175,16 +192,24 @@ function App() {
     {showConnect && <div className="hq-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowConnect(false); }}>
       <section className="hq-connect-modal" role="dialog" aria-modal="true" aria-labelledby="connect-title">
         <button className="hq-modal-close" onClick={() => setShowConnect(false)} aria-label="Close dialog">×</button>
-        <div className="connect-modal-icon">⌘</div><p className="eyebrow">NEXT STEP</p><h2 id="connect-title">Connect your first agent.</h2>
-        <p className="connect-modal-copy">The office is currently a visual preview. To show real work, it needs a small local bridge that reads agent status and task events from a running tool.</p>
+        <div className="connect-modal-icon">↗</div><p className="eyebrow">REMOTE EXECUTION · OPENCODE</p><h2 id="connect-title">Send a task to the cloud.</h2>
+        <p className="connect-modal-copy">Agent HQ will create a task issue in <strong>riiddev/office</strong> and ask OpenCode to work in GitHub Actions. Code changes should arrive as a pull request for you to review; the workflow does not merge automatically.</p>
         <div className="connect-source-list">
-          <div className="connect-source-row"><span className="source-monogram open-code">OC</span><span><strong>OpenCode</strong><small>Planned adapter · local runtime</small></span><span className="source-state">Not connected</span></div>
-          <div className="connect-source-row"><span className="source-monogram open-claw">O</span><span><strong>OpenClaw</strong><small>Planned adapter · local runtime</small></span><span className="source-state">Not connected</span></div>
+          <div className="connect-source-row"><span className="source-monogram open-code">OC</span><span><strong>OpenCode</strong><small>Runs in a GitHub-hosted runner</small></span><span className="source-state">Cloud worker</span></div>
+          <div className="connect-source-row"><span className="source-monogram open-claw">GH</span><span><strong>GitHub Actions</strong><small>Task history and code review</small></span><span className="source-state">PR-first</span></div>
         </div>
-        <div className="security-note"><span>♧</span><p><strong>Local-first by design</strong><br />Credentials stay on your computer. The first integration should be read-only; no agent will run commands just because a button exists in this UI.</p></div>
-        <button className="connect-primary" onClick={copyConnectionNotes}>{copied ? 'Setup notes copied ✓' : 'Copy integration plan'} <span>↗</span></button>
-        <button className="connect-secondary" onClick={() => setShowConnect(false)}>Continue exploring the office</button>
-        <p className="connect-disclaimer">This button does not connect an agent yet; it copies the implementation plan.</p>
+        <form className="dispatch-form" onSubmit={submitTask}>
+          <label className="dispatch-field"><span>HQ access token</span><input type="password" value={accessToken} onChange={(event) => setAccessToken(event.target.value)} autoComplete="off" placeholder="Same value as HQ_ACCESS_TOKEN in Vercel" required /></label>
+          <label className="dispatch-field"><span>What should the agent do?</span><textarea value={taskPrompt} onChange={(event) => setTaskPrompt(event.target.value)} maxLength={3000} minLength={8} rows={5} placeholder="Example: Review the current dashboard for accessibility issues and open a PR with safe fixes." required /></label>
+          <div className="dispatch-hint"><span>Maximum 3,000 characters</span><span>{taskPrompt.length}/3000</span></div>
+          <button className="connect-primary dispatch-submit" type="submit" disabled={dispatchState === 'sending' || !accessToken.trim() || taskPrompt.trim().length < 8}>
+            {dispatchState === 'sending' ? 'Sending task…' : 'Send task to GitHub Actions'} <span>↗</span>
+          </button>
+          {dispatchState === 'error' && <div className="dispatch-error" role="alert"><strong>Task belum terkirim.</strong><span>{dispatchError}</span>{dispatchResult?.issueUrl && <a href={dispatchResult.issueUrl} target="_blank" rel="noreferrer">Open issue yang sudah dibuat ↗</a>}</div>}
+          {dispatchState === 'success' && dispatchResult && <div className="dispatch-result" role="status"><strong>Task sudah dikirim ke GitHub.</strong><span>{dispatchResult.message}</span><div><a href={dispatchResult.issueUrl} target="_blank" rel="noreferrer">Open task issue ↗</a><a href={dispatchResult.workflowUrl} target="_blank" rel="noreferrer">Open Actions ↗</a></div></div>}
+        </form>
+        <div className="security-note"><span>♧</span><p><strong>Keep secrets out of task text</strong><br />The HQ token is sent to the protected Vercel endpoint. The GitHub token stays server-side; do not include passwords or API keys in a task because the issue text may be visible in GitHub.</p></div>
+        <p className="connect-disclaimer">Setup required: add HQ_ACCESS_TOKEN and GITHUB_ISSUES_TOKEN to Vercel, install the OpenCode GitHub App, and add OPENAI_API_KEY to GitHub Actions secrets. The task sender will show a setup error until these are configured.</p>
       </section>
     </div>}
   </main>;
