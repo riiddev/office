@@ -395,7 +395,7 @@ function simplify(from: [number, number], route: [number, number][], to: [number
 
 /** How long an idle agent stays at one stop (walking included). */
 export const IDLE_STOP_MS = 32_000
-export const IDLE_ROUTE = ['lounge', 'galon', 'balkon', 'game', 'bakso', 'tidur', 'jalan', 'arcade', 'lesehan', 'kopi', 'dapur', 'balkon', 'game', 'tidur']
+export const IDLE_ROUTE = ['lounge', 'galon', 'balkon', 'game', 'bakso', 'tidur', 'jalan', 'arcade', 'dining', 'kopi', 'dapur', 'balkon', 'game', 'tidur']
 
 export interface IdleAssignment { stop: IdleStop; placement: Placement }
 
@@ -409,7 +409,13 @@ export function idlePlan(seats: number[], time: number, layout: OfficeLayout = D
   const plan = new Map<number, IdleAssignment>()
   const taken = new Map<string, number>()
   const step = Math.floor(time / IDLE_STOP_MS)
-  const stopAt = (index: number) => layout.idleStops.find((item) => item.key === IDLE_ROUTE[index % IDLE_ROUTE.length])!
+  const stopAt = (index: number) => {
+    const key = IDLE_ROUTE[index % IDLE_ROUTE.length]
+    // Keep the idle planner resilient if a room key is renamed without updating the route table.
+    return layout.idleStops.find((item) => item.key === key)
+      ?? layout.idleStops.find((item) => item.key === 'lounge')
+      ?? layout.idleStops[0]
+  }
   // Sleepers (when the viewer sends idle agents to bed) stay in bed; they take the first beds.
   const beds = layout.idleStops.find((item) => item.key === 'tidur')!
   for (const seat of [...sleepers].sort((a, b) => a - b)) {
