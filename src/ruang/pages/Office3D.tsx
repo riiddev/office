@@ -175,7 +175,14 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
       group.rotation.y += angleTo(group.rotation.y, placement.facing) * (1 - Math.exp(-6 * delta))
     }
     const settled = arrived && Math.abs(angleTo(group.rotation.y, placement.facing)) < 0.35
-    if (station.activity.toLowerCase().includes('prayer') && settled && !walking && !prayerReadyReported.current) {
+    const destinationDistance = Math.hypot(
+      placement.position[0] - group.position.x,
+      placement.position[1] - group.position.y,
+      placement.position[2] - group.position.z,
+    )
+    // Orientation alone is not enough: a first frame before the route effect runs can look
+    // "settled" while an agent is still at its desk. Count only agents physically at their mat.
+    if (station.activity.toLowerCase().includes('prayer') && destinationDistance < 0.24 && settled && !walking && !moving && !prayerReadyReported.current) {
       prayerReadyReported.current = true
       onPrayerReady(station.id)
     }
