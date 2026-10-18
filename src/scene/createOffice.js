@@ -353,7 +353,7 @@ export function createOffice(host, { onSelect } = {}) {
   // An actual translucent divider separates the lounge from the game nook.
   // The center opening stays wide enough for walking routes.
   const loungeGameDivider = group(scene, 'lounge and game room divider');
-  for (const [x, width] of [[4.4, 1.8], [7.7, 2.0]]) {
+  for (const [x, width] of [[3.95, 1.4], [8.0, 1.4]]) {
     box(loungeGameDivider, 'divider wood lower panel', [width, 1.3, 0.14], [x, 0.76, 1.04], mats.wood);
     box(loungeGameDivider, 'divider glass upper panel', [width, 0.82, 0.055], [x, 1.86, 1.04], mats.glass);
     box(loungeGameDivider, 'divider cap rail', [width + 0.06, 0.07, 0.18], [x, 2.3, 1.04], mats.woodLight);
@@ -577,8 +577,8 @@ export function createOffice(host, { onSelect } = {}) {
     { x1: 4.54, x2: 7.28, z1: -1.2, z2: 0.35 },
     { x1: 7.55, x2: 8.48, z1: -2.52, z2: -1.15 },
     // Divider panels between lounge and gaming room, with a walk-through gap.
-    { x1: 3.2, x2: 5.55, z1: 0.72, z2: 1.38 },
-    { x1: 6.45, x2: 8.98, z1: 0.72, z2: 1.38 },
+    { x1: 3.2, x2: 4.7, z1: 0.72, z2: 1.38 },
+    { x1: 7.25, x2: 8.75, z1: 0.72, z2: 1.38 },
     // Arcade cabinets, console and beanbags; the carpet itself is walkable.
     { x1: 4.55, x2: 5.55, z1: 1.24, z2: 2.44 },
     { x1: 6.25, x2: 7.25, z1: 1.24, z2: 2.44 },
