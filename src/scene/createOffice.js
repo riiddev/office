@@ -129,13 +129,15 @@ export function createOffice(host, { onSelect } = {}) {
   // Structural accent beams and a few indoor plants.
   box(scene, 'beam one', [0.12, 3.9, 0.14], [-11.8, 2, -7.24], mats.wood);
   box(scene, 'beam two', [0.12, 3.9, 0.14], [2.7, 2, -7.24], mats.wood);
+  const plantLeaves = [];
   const addPlant = (x, z, size = 1) => {
     const p = group(scene, 'potted plant', [x, 0.12, z]);
     cylinder(p, 'pot', 0.25 * size, 0.3 * size, 0.42 * size, [0, 0.21 * size, 0], mats.terracotta);
     cylinder(p, 'soil', 0.22 * size, 0.22 * size, 0.04 * size, [0, 0.43 * size, 0], mats.darkWood);
     for (let i = 0; i < 5; i++) {
       const angle = i * Math.PI * 0.4;
-      sphere(p, 'leaf', 0.22 * size, [Math.cos(angle) * 0.18 * size, (0.68 + (i % 2) * 0.2) * size, Math.sin(angle) * 0.18 * size], i % 2 ? mats.leaf : mats.leafLight, [0.72, 1.45, 0.72]);
+      const leaf = sphere(p, 'leaf', 0.22 * size, [Math.cos(angle) * 0.18 * size, (0.68 + (i % 2) * 0.2) * size, Math.sin(angle) * 0.18 * size], i % 2 ? mats.leaf : mats.leafLight, [0.72, 1.45, 0.72]);
+      plantLeaves.push({ leaf, phase: plantLeaves.length * 0.9, scale: size });
     }
     cylinder(p, 'stem', 0.035 * size, 0.05 * size, 0.7 * size, [0, 0.72 * size, 0], mats.leaf);
   };
@@ -517,6 +519,10 @@ export function createOffice(host, { onSelect } = {}) {
       bossRoot.position.y = Math.sin(elapsed * 1.25) * 0.018;
       bossHead.rotation.y = Math.sin(elapsed * 0.55) * 0.045;
       bossHead.rotation.z = Math.sin(elapsed * 0.8) * 0.012;
+      plantLeaves.forEach(({ leaf, phase }) => {
+        leaf.rotation.z = Math.sin(elapsed * 0.55 + phase) * 0.045;
+        leaf.rotation.x = Math.cos(elapsed * 0.42 + phase) * 0.025;
+      });
     }
     characterGroups.forEach((character, i) => {
       const motion = character.userData.motion;
