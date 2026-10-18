@@ -206,7 +206,7 @@ export function createOffice(host, { onSelect } = {}) {
   // The lounge and conference room are the dedicated social zones now.
 
   // Cozy lounge: sofa, cushions, coffee table, rug, books and standing lamp.
-  const lounge = group(scene, 'lounge', [5.9, 0, -1.35]);
+  const lounge = group(scene, 'lounge', [5.9, 0, -2.0]);
   box(lounge, 'rug', [5.3, 0.055, 3.4], [0, 0.12, 0], material('#d8bfa3'));
   box(lounge, 'sofa base', [3.5, 0.55, 1.16], [0, 0.5, -0.45], mats.sofa);
   box(lounge, 'sofa back', [3.5, 1.05, 0.28], [0, 0.98, -0.95], mats.sofa);
@@ -574,9 +574,9 @@ export function createOffice(host, { onSelect } = {}) {
     // Reading nook, bookcase, lounge, and arcade room.
     { x1: -9.16, x2: -8.04, z1: -3.08, z2: -0.12 },
     // Actual lounge furniture footprints leave an aisle beside the sofa.
-    { x1: 3.86, x2: 7.92, z1: -3.1, z2: -0.92 },
-    { x1: 4.54, x2: 7.28, z1: -1.2, z2: 0.35 },
-    { x1: 7.55, x2: 8.48, z1: -2.52, z2: -1.15 },
+    { x1: 3.86, x2: 7.92, z1: -3.75, z2: -1.57 },
+    { x1: 4.54, x2: 7.28, z1: -1.85, z2: -0.3 },
+    { x1: 7.55, x2: 8.48, z1: -3.17, z2: -1.8 },
     // Divider panels between lounge and gaming room, with a walk-through gap.
     { x1: 3.2, x2: 4.7, z1: 0.72, z2: 1.38 },
     { x1: 7.25, x2: 8.75, z1: 0.72, z2: 1.38 },
@@ -861,7 +861,7 @@ export function createOffice(host, { onSelect } = {}) {
     boss: { position: [10.5, 8.5, 13], target: [-1.65, 1.05, 3.3] },
     studio: { position: [12, 10, 16], target: [0.2, 1, -3.0] },
     meeting: { position: [14, 10, 13], target: [10.1, 1, 0.4] },
-    lounge: { position: [14, 10, 10], target: [5.7, 1, -0.1] },
+    lounge: { position: [14, 10, 10], target: [5.7, 1, -1.6] },
     games: { position: [13, 9, 12], target: [6.2, 0.8, 2.0] },
     pantry: { position: [9, 9, 14], target: [-6.4, 1, 1.9] },
     bathroom: { position: [-2.5, 8.8, 13], target: [-10.5, 1.25, 5.0] },
