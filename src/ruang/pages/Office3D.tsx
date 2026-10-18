@@ -208,7 +208,9 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
     const praying = activity.includes('prayer') && prayerSessionStart > 0 && settled && !walking
     const eating = /eat|breakfast|lunch|dinner|snack/.test(activity)
     const drinking = /coffee|drink of water/.test(activity)
-    const showering = /showering|brushing teeth/.test(activity)
+    const showering = /showering/.test(activity)
+    const brushingTeeth = /brushing teeth/.test(activity) && !showering
+    const waitingInQueue = /waiting in bathroom queue|waiting for the sink/i.test(activity)
     const playing = /playing games/.test(activity)
     const usingPhone = /checking phone|messaging colleagues/.test(activity)
     const clearingDishes = /clearing .* dishes|wiping the table|tidying the table/.test(activity)
@@ -259,10 +261,22 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
       headPitch = 0.16 + Math.max(0, Math.sin(t * 0.7)) * 0.1
     }
     if (showering) {
-      armL = -0.55 + Math.sin(t * 2.1 + seed) * 0.24
-      armR = -0.65 + Math.sin(t * 2.1 + seed + 1.4) * 0.28
-      armLz = -0.06; armRz = 0.06
-      headPitch = 0.12 + Math.sin(t * 1.1) * 0.05
+      // Alternating hand movements read as rinsing and washing rather than a static raised-arm pose.
+      const rinse = Math.sin(t * 1.65 + seed)
+      const wash = Math.sin(t * 2.15 + seed * 0.8)
+      armL = -0.48 + rinse * 0.25
+      armR = -0.62 + wash * 0.3
+      armLz = -0.08 + Math.max(0, rinse) * 0.05
+      armRz = 0.08 - Math.max(0, wash) * 0.05
+      headPitch = 0.12 + Math.sin(t * 0.85 + seed) * 0.06
+    }
+    if (brushingTeeth) {
+      // Small, quick wrist strokes and a steady support hand at the sink.
+      armR = -1.12 + Math.sin(t * 8.2 + seed) * 0.12
+      armL = -0.28 + Math.sin(t * 1.1 + seed) * 0.035
+      armRz = -0.1
+      armLz = 0.035
+      headPitch = 0.2 + Math.sin(t * 0.8 + seed) * 0.035
     }
     if (playing) {
       armL = -0.55 + Math.sin(t * 3 + seed) * 0.4
@@ -297,6 +311,16 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
       armR = -0.55 + Math.sin(t * 2.4 + seed + 1) * 0.35
       armLz = 0.14; armRz = -0.14
       headPitch = 0.18
+    }
+    if (waitingInQueue && !walking) {
+      // A quiet queue is still alive: agents shift their weight, tap a foot, and glance towards the sink.
+      const wait = Math.sin(t * 1.45 + seed)
+      legL = wait * 0.045
+      legR = -wait * 0.035
+      armL = -0.12 + Math.sin(t * 0.8 + seed) * 0.04
+      armR = -0.16 + Math.max(0, Math.sin(t * 1.35 + seed)) * 0.1
+      headYaw = Math.sin(t * 0.38 + seed) * 0.2
+      headPitch = 0.03 + Math.max(0, Math.sin(t * 0.6 + seed)) * 0.04
     }
     let prayerStage: 'qiyam' | 'ruku' | 'itidal' | 'sujud' | 'sitting' | 'final-sitting' = 'qiyam'
     let torsoTarget = 0
