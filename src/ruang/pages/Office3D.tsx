@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { officeStateBadge } from '../office-state.ts'
 import { agentLook } from '../agents.ts'
-import { BATHROOM, clampTarget, createLayout, FLOOR_HEIGHT, floorOf, GAME_ROOM, idlePlan, placementFor, walkPath3, type Floor, type OfficeLayout, type Placement, type Vec3 } from '../office3d-layout.ts'
+import { bathroomQueueSpot, clampTarget, createLayout, diningSpot, FLOOR_HEIGHT, floorOf, GAME_ROOM, idlePlan, mushollaSpot, placementFor, walkPath3, type Floor, type OfficeLayout, type Placement, type Vec3 } from '../office3d-layout.ts'
 import { Environment } from '../scene3d/environment.tsx'
 import { RBox, WorkDesk } from '../scene3d/props.tsx'
 import type { OfficeStation } from '../types.ts'
@@ -499,9 +499,9 @@ const PRAYER_TIMES = {
   isha: { start: 19 * 60 + 15, end: 19 * 60 + 35 },
 } as const
 
-type DailyStop = 'desk' | 'meeting' | 'bathroom' | 'bedroom' | 'tidur' | 'lesehan' | 'bakso' | 'dapur' | 'lounge' | 'kopi' | 'galon' | 'game' | 'arcade' | 'balkon'
-type RoutineAction = { stop: DailyStop; state: OfficeStation['state']; activity: string; displayState: string }
-type SimulatedStation = OfficeStation & { routineStop: DailyStop }
+type DailyStop = 'desk' | 'meeting' | 'bathroom' | 'bathroom-queue' | 'bedroom' | 'tidur' | 'musholla' | 'dining' | 'bakso' | 'dapur' | 'lounge' | 'kopi' | 'galon' | 'game' | 'arcade' | 'balkon'
+type RoutineAction = { stop: DailyStop; state: OfficeStation['state']; activity: string; displayState: string; queueRank?: number }
+type SimulatedStation = OfficeStation & { routineStop: DailyStop; queueRank?: number }
 
 function jakartaMinuteOfDay(timestamp: number): number {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -516,15 +516,16 @@ function jakartaMinuteOfDay(timestamp: number): number {
 function dailyRoutine(station: OfficeStation, minute: number, crewCount: number): RoutineAction {
   const seat = Math.max(station.seat, 1)
   const count = Math.max(crewCount, 1)
-  const action = (stop: DailyStop, state: OfficeStation['state'], activity: string, displayState = activity): RoutineAction => ({
-    stop, state, activity, displayState,
+  const action = (stop: DailyStop, state: OfficeStation['state'], activity: string, displayState = activity, queueRank?: number): RoutineAction => ({
+    stop, state, activity, displayState, ...(queueRank === undefined ? {} : { queueRank }),
   })
   const choice = (stops: DailyStop[], offset = 0) => stops[(seat - 1 + offset) % stops.length]
   const work = (wrapUp = false): RoutineAction => {
     const reviewing = wrapUp ? seat % 2 === 0 : seat % 4 === 0
     return action('desk', reviewing ? 'Reviewing' : 'Working', wrapUp ? (reviewing ? 'Reviewing final tasks' : 'Finishing work') : (reviewing ? 'Reviewing code and notes' : 'Working at the computer'), reviewing ? 'Reviewing' : 'Working')
   }
-  const prayer = (name: string) => action('lesehan', 'Idle', name, 'Praying')
+  const prayer = (name: string) => action('musholla', 'Idle', name, 'Praying')
+  const headingToPrayer = () => action('musholla', 'Idle', 'Heading to the musholla', 'Heading to prayer')
 
   // Sleep is a fixed window, including after midnight, so agents never wake between schedule slots.
   if (minute >= 22 * 60 || minute < PRAYER_TIMES.fajr.start) {
@@ -533,26 +534,23 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
   if (minute < PRAYER_TIMES.fajr.end) return prayer('Fajr prayer')
   if (minute < 6 * 60) {
     // Six-minute turns give each agent a bathroom/shower slot while the rest get ready by their beds.
-    const bathroomSeat = (Math.floor((minute - 5 * 60) / 6) % count) + 1
-    return seat === bathroomSeat
-      ? action('bathroom', 'Idle', 'Showering · brushing teeth', 'Bathroom turn')
-      : action('bedroom', 'Idle', 'Getting dressed · waiting for the bathroom', 'Getting ready')
+    const turn = Math.floor((minute - 5 * 60) / 6)
+    const bathroomSeat = turn + 1
+    if (seat - 1 < turn) return action('bedroom', 'Idle', 'Getting dressed after showering', 'Getting ready')
+    if (seat === bathroomSeat) return action('bathroom', 'Idle', 'Showering · brushing teeth', 'Bathroom turn')
+    if (turn >= count) return action('bedroom', 'Idle', 'Getting dressed for work', 'Getting ready')
+    return action('bathroom-queue', 'Idle', `Waiting in bathroom queue · ${seat - turn - 1}`, 'In queue', seat - turn - 2)
   }
-  if (minute < 7 * 60) {
-    const stop = choice(['lesehan', 'bakso', 'dapur'])
-    return action(stop, 'Idle', 'Breakfast · eating and chatting', 'Breakfast')
-  }
+  if (minute < 7 * 60) return action('dining', 'Idle', 'Breakfast · eating and chatting', 'Breakfast')
   if (minute < 8 * 60) {
     return minute < 7 * 60 + 20
       ? action('bedroom', 'Idle', 'Getting dressed and preparing for work', 'Getting ready')
       : action('desk', 'Idle', 'Walking to the workplace', 'Heading to work')
   }
+  if (minute >= PRAYER_TIMES.dhuhr.start - 10 && minute < PRAYER_TIMES.dhuhr.start) return headingToPrayer()
   if (minute < PRAYER_TIMES.dhuhr.start) return work()
   if (minute < PRAYER_TIMES.dhuhr.end) return prayer('Dhuhr prayer')
-  if (minute < 14 * 60) {
-    const stop = choice(['bakso', 'lesehan', 'lounge', 'dapur'])
-    return action(stop, 'Idle', 'Lunch · eating with colleagues', 'Lunch break')
-  }
+  if (minute < 14 * 60) return action('dining', 'Idle', 'Lunch · eating with colleagues', 'Lunch break')
   if (minute < 15 * 60 + 30) {
     const block = Math.floor((minute - 14 * 60) / 30)
     const joinsMeeting = (seat + block) % 3 === 0
@@ -560,44 +558,44 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
       ? action('meeting', 'Collaborating', 'Team sync · sharing progress', 'In a meeting')
       : work()
   }
-  if (minute < 16 * 60) {
+  if (minute < PRAYER_TIMES.asr.start - 10) {
     const stop = choice(['kopi', 'galon', 'bakso', 'lounge'], Math.floor((minute - (15 * 60 + 30)) / 10))
     const activity = stop === 'kopi' ? 'Coffee break' : stop === 'galon' ? 'Getting a drink of water' : 'Snack break · socializing'
     return action(stop, 'Idle', activity, 'Break')
   }
+  if (minute < PRAYER_TIMES.asr.start) return headingToPrayer()
   if (minute < PRAYER_TIMES.asr.end) return prayer('Asr prayer')
   if (minute < 17 * 60 + 30) return work(true)
-  if (minute < PRAYER_TIMES.maghrib.start) {
+  if (minute < PRAYER_TIMES.maghrib.start - 10) {
     return action(choice(['lounge', 'balkon', 'game']), 'Idle', 'Unwinding after work', 'After work')
   }
+  if (minute < PRAYER_TIMES.maghrib.start) return headingToPrayer()
   if (minute < PRAYER_TIMES.maghrib.end) return prayer('Maghrib prayer')
-  if (minute < PRAYER_TIMES.isha.start) {
-    const stop = choice(['bakso', 'lesehan', 'lounge', 'dapur'])
-    return action(stop, 'Idle', 'Dinner · eating and talking', 'Dinner')
-  }
+  if (minute < PRAYER_TIMES.isha.start - 10) return action('dining', 'Idle', 'Dinner · eating and talking', 'Dinner')
+  if (minute < PRAYER_TIMES.isha.start) return headingToPrayer()
   if (minute < PRAYER_TIMES.isha.end) return prayer('Isha prayer')
   if (minute < 21 * 60 + 30) {
     const offset = Math.floor((minute - PRAYER_TIMES.isha.end) / 20)
-    const stop = choice(['lounge', 'game', 'arcade', 'balkon', 'lesehan'], offset)
+    const stop = choice(['lounge', 'game', 'arcade', 'balkon', 'dining'], offset)
     const activity = stop === 'lounge' ? 'Watching TV and chatting'
       : stop === 'game' || stop === 'arcade' ? 'Playing games together'
       : stop === 'balkon' ? 'Reading and relaxing on the balcony'
-      : 'Relaxing in the lesehan area'
+      : 'Relaxing around the dining tables'
     return action(stop, 'Idle', activity, 'Leisure')
   }
   if (minute < 22 * 60) {
-    const bathroomSeat = (Math.floor((minute - (21 * 60 + 30)) / 3) % count) + 1
-    return seat === bathroomSeat
-      ? action('bathroom', 'Idle', 'Brushing teeth before bed', 'Bedtime routine')
-      : action('bedroom', 'Idle', 'Changing into sleepwear · getting ready for bed', 'Getting ready for bed')
+    const turn = Math.floor((minute - (21 * 60 + 30)) / 3)
+    const bathroomSeat = turn + 1
+    if (seat - 1 < turn) return action('bedroom', 'Idle', 'Getting ready for bed after brushing teeth', 'Getting ready for bed')
+    if (seat === bathroomSeat) return action('bathroom', 'Idle', 'Brushing teeth before bed', 'Bedtime routine')
+    if (turn >= count) return action('bedroom', 'Idle', 'Settling down for sleep', 'Getting ready for bed')
+    return action('bathroom-queue', 'Idle', `Waiting for the sink · queue ${seat - turn - 1}`, 'In queue', seat - turn - 2)
   }
   return action('tidur', 'Idle', 'Sleeping', 'Asleep')
 }
 
 const BATHROOM_SPOTS: Placement[] = [
-  { position: [BATHROOM.minX + 0.35, FLOOR_HEIGHT, BATHROOM.maxZ - 0.65], facing: Math.PI, seated: false, label: 'Bathroom' },
-  { position: [BATHROOM.minX + 0.95, FLOOR_HEIGHT, BATHROOM.maxZ - 0.65], facing: Math.PI, seated: false, label: 'Bathroom' },
-  { position: [BATHROOM.maxX - 0.35, FLOOR_HEIGHT, BATHROOM.maxZ - 0.65], facing: Math.PI, seated: false, label: 'Bathroom' },
+  { position: [8.2, FLOOR_HEIGHT, -3.75], facing: Math.PI, seated: false, label: 'Shower' },
 ]
 
 const FLOOR_KEY = 'mc.officeFloor'
