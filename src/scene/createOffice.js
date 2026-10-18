@@ -500,14 +500,15 @@ export function createOffice(host, { onSelect } = {}) {
   const bossRoute = [
     { x: -1.65, z: 4.45, face: Math.PI, activity: 'work', dwell: 7 },
     { x: 2.5, z: 8.25, face: 0.55, activity: 'walk', dwell: 0 },
-    { x: 2.55, z: 6.35, face: Math.PI, activity: 'dining', dwell: 6 },
+    { x: 2.55, z: 6.35, face: Math.PI / 2, activity: 'dining', dwell: 6 },
     { x: 10.2, z: 2.6, face: Math.PI, activity: 'meeting', dwell: 6 },
-    { x: 4.0, z: 0.55, face: -0.25, activity: 'lounge', dwell: 5 },
-    { x: -4.0, z: 3.7, face: -Math.PI / 2, activity: 'coffee', dwell: 5 },
+    { x: 3.7, z: -0.45, face: 2.3, activity: 'lounge', dwell: 5 },
+    { x: -6.0, z: 3.7, face: Math.PI, activity: 'coffee', dwell: 5 },
     { x: 10.8, z: -2.8, face: 0, activity: 'review', dwell: 5 },
-    { x: 13.2, z: 10.8, face: 0.3, activity: 'pool', dwell: 6 },
+    { x: 13.2, z: 10.8, face: 0.5, activity: 'pool', dwell: 6 },
     { x: -1.65, z: 4.45, face: Math.PI, activity: 'work', dwell: 8 }
   ];
+  bossRoot.rotation.y = bossRoute[0].face;
   const bossMotion = {
     target: 0, walking: false, wait: bossRoute[0].dwell, activity: bossRoute[0].activity,
     phase: 1.4, stepRate: 9.6, route: [], pathIndex: 0
