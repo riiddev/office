@@ -431,6 +431,10 @@ const FLOORS: { floor: Floor; label: string; title: string }[] = [
   { floor: 2, label: 'Kamar & Balkon', title: 'Lantai 2: bedroom, lesehan and balcony' },
   { floor: 1, label: 'Kantor', title: 'Lantai 1: office, lounge, pantry and game room' },
 ]
+/** One routine step lasts this long; the sequence repeats. */
+const ROUTINE_SLOT_MS = 28_000
+const ROUTINE = ['desk', 'desk', 'break', 'desk', 'meet', 'desk'] as const
+
 const FLOOR_KEY = 'mc.officeFloor'
 const SLEEP_KEY = 'mc.officeSleep'
 
@@ -453,7 +457,7 @@ function useFloor(): [Floor, (floor: Floor) => void] {
   }]
 }
 
-export default function Office3D({ stations, onSelect, themeOverride, focusRoom = 'all' }: { stations: OfficeStation[]; onSelect: (station: OfficeStation, trigger: HTMLElement | null) => void; themeOverride?: 'dark' | 'light'; focusRoom?: string }) {
+export default function Office3D({ stations: crew, onSelect, themeOverride, focusRoom = 'all' }: { stations: OfficeStation[]; onSelect: (station: OfficeStation, trigger: HTMLElement | null) => void; themeOverride?: 'dark' | 'light'; focusRoom?: string }) {
   const anchors = useRef(new Map<string, THREE.Object3D>())
   const labels = useRef(new Map<string, HTMLElement>())
   const view = useRef<ViewHandle>(null)
@@ -464,6 +468,19 @@ export default function Office3D({ stations, onSelect, themeOverride, focusRoom 
   const [floor, setFloor] = useFloor()
   const [sleepMode, setSleepMode] = useStoredFlag(SLEEP_KEY)
   const now = useClock(2000)
+  // Every agent follows its own routine: desk work, a break somewhere in the building, a sync at the
+  // meeting table. Each is offset by its seat, so they leave and return at different times. The
+  // breaks and syncs reuse the idle-wander and meeting placements below, so nothing else changes.
+  const slot = Math.floor(now / ROUTINE_SLOT_MS)
+  const stations = crew.map((station): OfficeStation => {
+    const alreadyAway = (station.state === 'Idle' && station.room === 'Lounge') || station.roomPosition === 'meeting-area'
+    if (station.state === 'Offline' || alreadyAway) return station
+    const step = ROUTINE[(slot + Math.max(station.seat, 1)) % ROUTINE.length]
+    if (step === 'break') return { ...station, state: 'Idle', room: 'Lounge', activity: '', displayState: 'On break' }
+    if (step === 'meet') return { ...station, state: 'Collaborating', room: 'Workspace', roomPosition: 'meeting-area', activity: 'Quick sync' }
+    return station
+  })
+
   // One unlabeled desk per agent (hot desking); the building is sized for the crew.
   const layout = useMemo(() => createLayout(stations.length), [stations.length])
   // Idle agents wander between the lounge, the game room, the pantry, the street food and
