@@ -86,12 +86,17 @@ function App() {
     }
   }, []);
 
-  // One simulation second advances by the selected number of real-time seconds.
+  // Advance from actual elapsed time rather than adding a fixed amount per callback.
+  // If the 3D renderer briefly blocks the main thread, the clock catches up instead of drifting.
   // At 60×, a complete in-game day takes 24 real minutes.
   useEffect(() => {
+    let lastTick = performance.now();
     const timer = window.setInterval(() => {
-      setSimulationNow((current) => current + 1000 * timeScale);
-    }, 1000);
+      const tick = performance.now();
+      const elapsed = Math.max(0, tick - lastTick);
+      lastTick = tick;
+      setSimulationNow((current) => current + elapsed * timeScale);
+    }, 250);
     return () => window.clearInterval(timer);
   }, [timeScale]);
 
