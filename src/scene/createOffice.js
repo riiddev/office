@@ -561,7 +561,7 @@ export function createOffice(host, { onSelect } = {}) {
   const bossActor=makeActor(bossRoot,{legs:bossLegs,arms:bossArms.map(o=>o.group),head:bossHead,headTilt:false},{boss:true,speed:1.1,phase:1.4});actors.push(bossActor);
   const deskSt=stations.filter(s=>s.tag==='desk'),meetSt=stations.filter(s=>s.tag==='meet');
   actors.forEach((a,i)=>{seatAt(a,a.boss?stations.find(s=>s.tag==='boss'):i<6?deskSt[i]:meetSt[(i-6)%meetSt.length]);applyPose(a,1,0);});
-  const originalCamera = new THREE.Vector3(34, 26, 40);  const originalCamera = new THREE.Vector3(34, 26, 40);
+  const originalCamera = new THREE.Vector3(34, 26, 40);
   const resize = () => {
     const width = Math.max(host.clientWidth, 320);
     const height = Math.max(host.clientHeight, 320);
