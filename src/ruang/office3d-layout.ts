@@ -151,13 +151,12 @@ export function diningSpot(index: number): Placement {
   return upstairs(x, z, frontSide ? 0 : Math.PI, { seated: true, label: `Dining table ${tableIndex + 1} · seat ${seat + 1}` })
 }
 
-/** Bathroom queue slots form a short two-column waiting bay east of the dining furniture. */
+/** Eight near-door queue spots. Overflow callers wait in a reserved bedroom holding position. */
 export function bathroomQueueSpot(index: number): Placement {
   const row = Math.floor(index / 2)
   const column = index % 2
-  // Alternate the front-door side first, then zig-zag toward the clear side lane. This prevents a
-  // long queue from spilling onto the balcony or across dining seats when the crew is larger.
-  const x = column === 0 ? 8.55 : 7.65
+  // Both columns stay clear of the front wall and east of the dining table edges.
+  const x = column === 0 ? 8.1 : 9.0
   const z = -1.55 + row * 0.86
   return upstairs(x, z, Math.PI, { label: `Bathroom queue · ${index + 1}` })
 }

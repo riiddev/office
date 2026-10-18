@@ -757,6 +757,7 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
   return action('tidur', 'Idle', 'Sleeping', 'Asleep')
 }
 
+const BATHROOM_QUEUE_VISIBLE_CAPACITY = 8
 const BATHROOM_SPOTS: Placement[] = [
   { position: [8.2, FLOOR_HEIGHT, -3.75], facing: Math.PI, seated: false, label: 'Shower' },
 ]
@@ -859,7 +860,21 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
       stations.filter((candidate) => candidate.routineStop === 'musholla').length,
     )
     if (station.routineStop === 'dining') return diningSpot(Math.max(0, reservationIndex('dining', station)))
-    if (station.routineStop === 'bathroom-queue') return bathroomQueueSpot(Math.max(0, station.queueRank ?? reservationIndex('bathroom-queue', station)))
+    if (station.routineStop === 'bathroom-queue') {
+      const queueRank = Math.max(0, station.queueRank ?? reservationIndex('bathroom-queue', station))
+      // Keep the first eight people in a compact two-column queue outside the bathroom doorway.
+      // Further visitors wait at their own reserved bedroom holding spot until their turn advances.
+      if (queueRank < BATHROOM_QUEUE_VISIBLE_CAPACITY) return bathroomQueueSpot(queueRank)
+      const beds = layout.idleStops.find((stop) => stop.key === 'tidur')
+      const bed = beds?.spots[(seat - 1) % (beds.spots.length || 1)]
+      if (bed) return {
+        position: [bed.position[0] + 0.75, FLOOR_HEIGHT, bed.position[2] - 0.25],
+        facing: 0,
+        seated: false,
+        label: 'Bathroom queue · waiting area',
+      }
+      return bathroomQueueSpot(queueRank)
+    }
     if (station.routineStop === 'bathroom') {
       const brushing = station.activity.toLowerCase().includes('brushing teeth')
       return brushing
