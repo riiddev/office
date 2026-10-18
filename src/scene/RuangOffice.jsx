@@ -10,7 +10,7 @@ const stateByStatus = {
   queued: 'Unknown',
 };
 
-export default function RuangOffice({ night = false, focusRoom = 'all', onSelectAgent, simulationNow = Date.now() }) {
+export default function RuangOffice({ night = false, focusRoom = 'all', onSelectAgent, simulationNow = Date.now(), simulationRate = 60 }) {
   const stations = useMemo(() => agents.map((agent, index) => ({
     id: agent.id,
     name: agent.id === 'boss' ? 'Riiddev · Boss' : agent.name,
@@ -33,6 +33,7 @@ export default function RuangOffice({ night = false, focusRoom = 'all', onSelect
         themeOverride={night ? 'dark' : 'light'}
         focusRoom={focusRoom}
         simulationNow={simulationNow}
+        simulationRate={simulationRate}
         onSelect={(station) => onSelectAgent?.(station.id)}
       />
     </div>
