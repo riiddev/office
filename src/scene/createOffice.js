@@ -332,12 +332,14 @@ export function createOffice(host, { onSelect } = {}) {
   box(poolDeck, 'pool coping back', [5.32, 0.12, 0.18], [0, 0.45, -1.76], mats.cream);
   box(poolDeck, 'pool coping left', [0.18, 0.12, 3.3], [-2.57, 0.45, -0.1], mats.cream);
   box(poolDeck, 'pool coping right', [0.18, 0.12, 3.3], [2.57, 0.45, -0.1], mats.cream);
+  const poolRipples = [];
   for (let i = 0; i < 4; i++) {
     const ripple = new THREE.Mesh(new THREE.TorusGeometry(0.18 + i * 0.07, 0.012, 4, 24), material('#b9e5df', 0.25, { transparent: true, opacity: 0.65 }));
     ripple.rotation.x = -Math.PI / 2;
     ripple.position.set(-0.85 + i * 0.55, 0.45, -0.3 + (i % 2) * 0.55);
     ripple.name = 'pool ripple';
     poolDeck.add(ripple);
+    poolRipples.push({ ripple, phase: i * 1.45 });
   }
   // Ladder at the corner.
   for (let i = 0; i < 2; i++) cylinder(poolDeck, 'pool ladder rail', 0.035, 0.035, 0.95, [2.18 + i * 0.3, 0.73, 1.12], mats.metal, 8);
@@ -353,6 +355,15 @@ export function createOffice(host, { onSelect } = {}) {
   const parasol = cylinder(poolDeck, 'parasol canopy', 0.25, 1.25, 0.38, [-3.2, 2.0, -1.45], material('#dca979'), 16);
   parasol.scale.z = 1.1;
   addPlant(15.0, 10.8, 0.8);
+
+  // An actual translucent divider separates the lounge from the game nook.
+  // The center opening stays wide enough for walking routes.
+  const loungeGameDivider = group(scene, 'lounge and game room divider');
+  for (const [x, width] of [[4.4, 1.8], [7.7, 2.0]]) {
+    box(loungeGameDivider, 'divider wood lower panel', [width, 1.3, 0.14], [x, 0.76, 1.04], mats.wood);
+    box(loungeGameDivider, 'divider glass upper panel', [width, 0.82, 0.055], [x, 1.86, 1.04], mats.glass);
+    box(loungeGameDivider, 'divider cap rail', [width + 0.06, 0.07, 0.18], [x, 2.3, 1.04], mats.woodLight);
+  }
 
   // Low glass partitions divide the studio into quieter work pods while keeping sightlines.
   const workDividers = [
@@ -568,6 +579,9 @@ export function createOffice(host, { onSelect } = {}) {
     { x1: 1.42, x2: 4.48, z1: -4.45, z2: -1.22 },
     { x1: -9.16, x2: -8.04, z1: -3.08, z2: -0.12 },
     { x1: 3.78, x2: 8.03, z1: -2.48, z2: 1.02 },
+    // Divider panels between lounge and gaming room, with a walk-through gap.
+    { x1: 3.45, x2: 5.32, z1: 0.91, z2: 1.19 },
+    { x1: 6.68, x2: 8.75, z1: 0.91, z2: 1.19 },
     { x1: 3.42, x2: 8.98, z1: 1.22, z2: 4.72 },
     // Pantry counters / fridge.
     { x1: -8.96, x2: -4.28, z1: 1.18, z2: 3.28 },
@@ -718,7 +732,9 @@ export function createOffice(host, { onSelect } = {}) {
         push({ id: nextId, f: score + heuristic(nextId, goalId) });
       }
     }
-    if (!found) return [navPoint(goal.ix, goal.iz)];
+    // If a room is sealed or unreachable, keep the character on its current
+    // safe tile instead of taking a straight-line shortcut through furniture.
+    if (!found) return [navPoint(start.ix, start.iz)];
     const rawIds = [];
     let cursor = goalId;
     rawIds.push(cursor);
@@ -988,6 +1004,12 @@ export function createOffice(host, { onSelect } = {}) {
       plantLeaves.forEach(({ leaf, phase }) => {
         leaf.rotation.z = Math.sin(elapsed * 0.55 + phase) * 0.045;
         leaf.rotation.x = Math.cos(elapsed * 0.42 + phase) * 0.025;
+      });
+      poolRipples.forEach(({ ripple, phase }) => {
+        const wave = (elapsed * 0.42 + phase) % 1;
+        const scale = 0.72 + wave * 0.48;
+        ripple.scale.set(scale, scale, scale);
+        ripple.material.opacity = 0.16 + (1 - wave) * 0.38;
       });
     }
     characterGroups.forEach((character, i) => {
