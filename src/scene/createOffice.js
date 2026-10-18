@@ -773,7 +773,12 @@ export function createOffice(host, { onSelect } = {}) {
   };
 
   characters.forEach((info, i) => {
-    const c = group(scene, 'character-' + info.id, waypoints[i][0]);
+    // Spawn in a verified free cell so characters never begin inside a chair,
+    // divider, or desk footprint before their first route even starts.
+    const requestedSpawn = waypoints[i][0];
+    const spawnCell = nearestWalkableCell({ x: requestedSpawn[0], z: requestedSpawn[2] });
+    const spawnPoint = navPoint(spawnCell.ix, spawnCell.iz);
+    const c = group(scene, 'character-' + info.id, [spawnPoint[0], 0, spawnPoint[1]]);
     c.userData.character = info;
     const skin = material(info.color);
     const shirt = material(info.shirt);
