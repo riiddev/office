@@ -125,13 +125,16 @@ export interface OfficeLayout {
 const spot = (x: number, z: number, facing: number, seated = false, label?: string): Placement => ({ position: [x, 0, z], facing, seated, ...(label ? { label } : {}) })
 const upstairs = (x: number, z: number, facing: number, extra: Partial<Placement> = {}): Placement => ({ position: [x, FLOOR_HEIGHT, z], facing, seated: false, ...extra })
 
-/** One reserved imam spot plus a deterministic row/column assignment for each worshipper. */
+/** Capacity includes the imam: one front mat plus up to eleven followers in straight rows. */
 export function mushollaSpot(index: number): Placement {
   if (index === 0) return upstairs(MUSHOLLA.x, MUSHOLLA.z - 1.72, MUSHOLLA.facing, { label: 'Imam · front' })
   const follower = index - 1
+  const maxFollowers = MUSHOLLA.capacity - 1
   const row = Math.floor(follower / MUSHOLLA.columns)
   const column = follower % MUSHOLLA.columns
-  const x = MUSHOLLA.x + (column - (MUSHOLLA.columns - 1) / 2) * MUSHOLLA.columnSpacing
+  const columnsInRow = row === MUSHOLLA.rows - 1 ? maxFollowers % MUSHOLLA.columns || MUSHOLLA.columns : MUSHOLLA.columns
+  const centeredColumn = column - (columnsInRow - 1) / 2
+  const x = MUSHOLLA.x + centeredColumn * MUSHOLLA.columnSpacing
   const z = MUSHOLLA.z - 1.0 + row * MUSHOLLA.rowSpacing
   return upstairs(x, z, MUSHOLLA.facing, { label: `Saf ${row + 1}` })
 }
