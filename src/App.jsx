@@ -88,7 +88,10 @@ function App() {
         body: JSON.stringify({ prompt: taskPrompt.trim() }),
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || ('Request failed (HTTP ' + response.status + ').'));
+      if (!response.ok) {
+        setDispatchResult(result);
+        throw new Error(result.error || ('Request failed (HTTP ' + response.status + ').'));
+      }
       setDispatchResult(result);
       setDispatchState('success');
       setTaskPrompt('');
