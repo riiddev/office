@@ -13,7 +13,8 @@ const rooms = [
   { id: 'street', label: 'Street food', icon: '♨' },
   { id: 'bedroom', label: 'Bedroom', icon: '☾' },
   { id: 'bathroom', label: 'Bathroom', icon: '⌁' },
-  { id: 'lesehan', label: 'Lesehan', icon: '⌑' },
+  { id: 'musholla', label: 'Musholla', icon: '☪' },
+  { id: 'dining', label: 'Dining room', icon: '♨' },
   { id: 'balcony', label: 'Balcony', icon: '⌂' },
 ];
 
@@ -53,7 +54,9 @@ function Status({ status }) {
 
 function App() {
   const appRef = useRef(null);
-  const [night, setNight] = useState(false);
+  const [nightOverride, setNightOverride] = useState(null);
+  const [simulationNow, setSimulationNow] = useState(() => Date.now());
+  const [timeScale, setTimeScale] = useState(60);
   const [activeRoom, setActiveRoom] = useState('all');
   const [selectedAgentId, setSelectedAgentId] = useState('boss');
   const [showConnect, setShowConnect] = useState(false);
@@ -62,7 +65,7 @@ function App() {
   const [dispatchState, setDispatchState] = useState('idle');
   const [dispatchError, setDispatchError] = useState('');
   const [dispatchResult, setDispatchResult] = useState(null);
-  const [clock, setClock] = useState(() => new Date());
+
 
   const crew = useMemo(() => agents.filter((agent) => agent.id !== 'boss'), []);
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) || agents[0];
@@ -83,10 +86,14 @@ function App() {
     }
   }, []);
 
+  // One simulation second advances by the selected number of real-time seconds.
+  // At 60×, a complete in-game day takes 24 real minutes.
   useEffect(() => {
-    const timer = window.setInterval(() => setClock(new Date()), 30000);
+    const timer = window.setInterval(() => {
+      setSimulationNow((current) => current + 1000 * timeScale);
+    }, 1000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [timeScale]);
 
   useEffect(() => {
     if (!showConnect) return undefined;
@@ -136,8 +143,20 @@ function App() {
     }
   };
 
-  const time = clock.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-  const date = clock.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+  const simulationDate = new Date(simulationNow);
+  const time = new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).format(simulationDate);
+  const date = new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta', weekday: 'short', day: 'numeric', month: 'short',
+  }).format(simulationDate);
+  const clockParts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(simulationDate);
+  const simulationMinute = Number(clockParts.find((part) => part.type === 'hour')?.value || 0) * 60
+    + Number(clockParts.find((part) => part.type === 'minute')?.value || 0);
+  const automaticNight = simulationMinute < 360 || simulationMinute >= 1080;
+  const night = nightOverride === null ? automaticNight : nightOverride;
   const selectedRoomLabel = rooms.find((room) => room.id === activeRoom)?.label || 'Whole office';
 
   return (
@@ -156,8 +175,18 @@ function App() {
         </div>
 
         <div className="v-topbar-actions">
-          <div className="v-clock"><strong>{time}</strong><small>{date}</small></div>
-          <button className="v-icon-button" onClick={() => setNight((value) => !value)} title={night ? 'Switch to daytime' : 'Switch to nighttime'} aria-label={night ? 'Switch to daytime' : 'Switch to nighttime'}>
+          <div className="v-clock"><strong>{time}</strong><small>{date} · WIB · {timeScale}×</small></div>
+          <label className="v-time-speed" title="Simulation speed">
+            <span>SIM</span>
+            <select aria-label="Simulation time multiplier" value={timeScale} onChange={(event) => setTimeScale(Number(event.target.value))}>
+              <option value={1}>1×</option>
+              <option value={15}>15×</option>
+              <option value={30}>30×</option>
+              <option value={60}>60×</option>
+              <option value={120}>120×</option>
+            </select>
+          </label>
+          <button className="v-icon-button" onClick={() => setNightOverride((value) => value === null ? !night : null)} title={night ? 'Override automatic day/night mode' : 'Override automatic day/night mode'} aria-label={night ? 'Override automatic day/night mode' : 'Override automatic day/night mode'}>
             <span>{night ? '☼' : '☾'}</span>
           </button>
           <button className="v-task-button" onClick={() => { setShowConnect(true); setDispatchState('idle'); setDispatchError(''); setDispatchResult(null); }}>
@@ -182,7 +211,7 @@ function App() {
 
       <section className="v-world-layout v-reveal" aria-label="Interactive virtual office">
         <div className="v-world-stage">
-          <RuangOffice night={night} focusRoom={activeRoom} onSelectAgent={setSelectedAgentId} />
+          <RuangOffice night={night} focusRoom={activeRoom} onSelectAgent={setSelectedAgentId} simulationNow={simulationNow} simulationRate={timeScale} />
 
           <div className="v-stage-topline">
             <span className="v-stage-live"><i /> WORLD VIEW</span>
@@ -193,7 +222,7 @@ function App() {
           </div>
 
           <nav className="v-room-dock" aria-label="Explore office rooms">
-            <div className="v-room-dock-heading"><span>EXPLORE</span><small>11 SPACES</small></div>
+            <div className="v-room-dock-heading"><span>EXPLORE</span><small>12 SPACES</small></div>
             {rooms.map((room) => (
               <button
                 key={room.id}

@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { officeStateBadge } from '../office-state.ts'
 import { agentLook } from '../agents.ts'
-import { clampTarget, createLayout, FLOOR_HEIGHT, floorOf, GAME_ROOM, idlePlan, placementFor, walkPath3, type Floor, type OfficeLayout, type Placement, type Vec3 } from '../office3d-layout.ts'
+import { DINING, MUSHOLLA, bathroomQueueSpot, clampTarget, createLayout, diningSpot, FLOOR_HEIGHT, floorOf, GAME_ROOM, idlePlan, mushollaSpot, placementFor, walkPath3, type Floor, type OfficeLayout, type Placement, type Vec3 } from '../office3d-layout.ts'
 import { Environment } from '../scene3d/environment.tsx'
 import { RBox, WorkDesk } from '../scene3d/props.tsx'
 import type { OfficeStation } from '../types.ts'
@@ -23,16 +23,17 @@ function outdoors(x: number, z: number, layout: OfficeLayout): boolean {
 
 // Shared by every character: lets walkers steer around anyone standing, sitting or lying in their way.
 const crowd = new Set<THREE.Group>()
-const scratch = { move: new THREE.Vector3(), push: new THREE.Vector3() }
+const scratch = { move: new THREE.Vector3(), push: new THREE.Vector3(), candidate: new THREE.Vector3(), side: new THREE.Vector3() }
 const damp = (current: number, target: number, rate: number, delta: number) => current + (target - current) * (1 - Math.exp(-rate * delta))
 const angleTo = (from: number, to: number) => Math.atan2(Math.sin(to - from), Math.cos(to - from))
 const seedOf = (id: string) => { let hash = 0; for (let index = 0; index < id.length; index += 1) hash = (hash * 31 + id.charCodeAt(index)) % 9973; return (hash / 9973) * Math.PI * 2 }
 const smooth = (edge0: number, edge1: number, value: number) => { const x = Math.min(1, Math.max(0, (value - edge0) / (edge1 - edge0))); return x * x * (3 - 2 * x) }
 const WALK_SPEED = 1.55
 
-function Character({ station, placement, layout, floor, onSelect, anchor }: { station: OfficeStation; placement: Placement; layout: OfficeLayout; floor: Floor; onSelect: (station: OfficeStation, trigger: HTMLElement | null) => void; anchor: (object: THREE.Object3D | null) => void }) {
+function Character({ station, placement, layout, floor, onSelect, anchor, prayerSessionStart, prayerCycleDuration, simulationRate, onPrayerReady }: { station: OfficeStation & { routineStop?: DailyStop }; placement: Placement; layout: OfficeLayout; floor: Floor; onSelect: (station: OfficeStation, trigger: HTMLElement | null) => void; anchor: (object: THREE.Object3D | null) => void; prayerSessionStart: number; prayerCycleDuration: number; simulationRate: number; onPrayerReady: (id: string) => void }) {
   const root = useRef<THREE.Group>(null)
   const body = useRef<THREE.Group>(null)
+  const torso = useRef<THREE.Group>(null)
   const head = useRef<THREE.Group>(null)
   const leftEye = useRef<THREE.Group>(null)
   const rightEye = useRef<THREE.Group>(null)
@@ -47,8 +48,12 @@ function Character({ station, placement, layout, floor, onSelect, anchor }: { st
   // Only the first placement is applied as a prop; later changes are walked to via the aisle.
   const [start] = useState<Vec3>(() => placement.position)
   const path = useRef<THREE.Vector3[]>([])
+  const progress = useRef({ last: new THREE.Vector3(), stuckSeconds: 0 })
+  const prayerReadyReported = useRef(false)
   const destination = placement.position.join(',')
   const seed = useMemo(() => seedOf(station.id), [station.id])
+  // The clock advances 120 game-seconds per real second at 120×. Scale motion only above
+  // the 60× default so a compressed schedule still has time to walk between rooms.
   // Everything animated is eased towards its target each frame, so no pose ever snaps.
   const pose = useRef((() => {
     // Start already in the initial pose (seated, on the floor, in bed) instead of easing into it on load.
@@ -56,7 +61,7 @@ function Character({ station, placement, layout, floor, onSelect, anchor }: { st
     const floorPose = placement.pose === 'floor' ? 1 : 0
     const lie = placement.pose === 'lie' ? 1 : 0
     const legs = sit || floorPose ? -Math.PI / 2.2 : 0
-    return { speed: 0, phase: seed, sit, lie, floor: floorPose, legL: legs, legR: legs, armL: 0, armR: 0, armLz: 0, armRz: 0, headYaw: 0, headPitch: 0, headRoll: 0, lean: 0, sway: 0, bodyY: lie * ((placement.height ?? 0.5) + 0.16) + (1 - lie) * (-0.14 * sit - 0.5 * floorPose), bobY: 0, twist: 0 }
+    return { speed: 0, phase: seed, sit, lie, floor: floorPose, legL: legs, legR: legs, armL: 0, armR: 0, armLz: 0, armRz: 0, headYaw: 0, headPitch: 0, headRoll: 0, lean: 0, sway: 0, bodyY: lie * ((placement.height ?? 0.5) + 0.16) + (1 - lie) * (-0.14 * sit - 0.5 * floorPose), bobY: 0, twist: 0, torsoX: 0 }
   })())
   useEffect(() => {
     const group = root.current
@@ -71,6 +76,9 @@ function Character({ station, placement, layout, floor, onSelect, anchor }: { st
     // placement.position is captured through `destination`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [destination])
+  useEffect(() => {
+    prayerReadyReported.current = false
+  }, [station.activity])
 
   useFrame((state, rawDelta) => {
     const group = root.current
@@ -104,7 +112,7 @@ function Character({ station, placement, layout, floor, onSelect, anchor }: { st
         const turn = Math.abs(angleTo(group.rotation.y, heading))
         // Ease in from rest, ease out towards the final spot, and slow for sharp turns instead of sliding sideways.
         const approach = finalLeg ? 0.35 + distance * 1.6 : 1
-        const target = WALK_SPEED * Math.min(1, approach) * (1 - Math.min(0.7, turn / 2.2))
+        const target = WALK_SPEED * Math.max(1, simulationRate / 50) * Math.min(1, approach) * (1 - Math.min(0.7, turn / 2.2))
         s.speed = damp(s.speed, target, target > s.speed ? 4 : 7, delta)
         const step = Math.min(distance, s.speed * delta)
         scratch.move.normalize().multiplyScalar(step)
@@ -120,8 +128,35 @@ function Character({ station, placement, layout, floor, onSelect, anchor }: { st
           }
           scratch.move.addScaledVector(scratch.push, Math.min(1, delta * 2.2))
         }
-        group.position.add(scratch.move)
-        if (Math.hypot(scratch.move.x, scratch.move.z) > 1e-5) group.rotation.y += angleTo(group.rotation.y, heading) * (1 - Math.exp(-9 * delta))
+        scratch.candidate.copy(group.position).add(scratch.move)
+        const collidesAt = (x: number, z: number) => {
+          for (const other of crowd) {
+            if (other === group || Math.abs(other.position.y - group.position.y) > 1) continue
+            if (Math.hypot(x - other.position.x, z - other.position.z) < 0.54) return true
+          }
+          return false
+        }
+        let clear = !collidesAt(scratch.candidate.x, scratch.candidate.z)
+        if (!clear) {
+          const stepLength = Math.max(0.0001, Math.hypot(scratch.move.x, scratch.move.z))
+          scratch.side.set(-scratch.move.z / stepLength, 0, scratch.move.x / stepLength).multiplyScalar(0.18)
+          // Try either side of the blocked step before waiting; the existing stuck-route fallback
+          // remains available if the corridor is genuinely occupied.
+          for (const direction of [1, -1]) {
+            const sideX = group.position.x + scratch.move.x + scratch.side.x * direction
+            const sideZ = group.position.z + scratch.move.z + scratch.side.z * direction
+            if (!collidesAt(sideX, sideZ)) {
+              scratch.move.x += scratch.side.x * direction
+              scratch.move.z += scratch.side.z * direction
+              clear = true
+              break
+            }
+          }
+        }
+        if (clear) {
+          group.position.add(scratch.move)
+          if (Math.hypot(scratch.move.x, scratch.move.z) > 1e-5) group.rotation.y += angleTo(group.rotation.y, heading) * (1 - Math.exp(-9 * delta))
+        }
         s.phase += delta * s.speed * 4.6
       }
     }
@@ -142,6 +177,17 @@ function Character({ station, placement, layout, floor, onSelect, anchor }: { st
       group.rotation.y += angleTo(group.rotation.y, placement.facing) * (1 - Math.exp(-6 * delta))
     }
     const settled = arrived && Math.abs(angleTo(group.rotation.y, placement.facing)) < 0.35
+    const destinationDistance = Math.hypot(
+      placement.position[0] - group.position.x,
+      placement.position[1] - group.position.y,
+      placement.position[2] - group.position.z,
+    )
+    // Orientation alone is not enough: a first frame before the route effect runs can look
+    // "settled" while an agent is still at its desk. Count only agents physically at their mat.
+    if (station.activity.toLowerCase().includes('prayer') && destinationDistance < 0.24 && settled && !walking && !moving && !prayerReadyReported.current) {
+      prayerReadyReported.current = true
+      onPrayerReady(station.id)
+    }
     s.sit = damp(s.sit, arrived && placement.seated && !placement.pose ? 1 : 0, 6, delta)
     s.floor = damp(s.floor, arrived && placement.pose === 'floor' ? 1 : 0, 5, delta)
     s.lie = damp(s.lie, arrived && settled && placement.pose === 'lie' ? 1 : 0, 3.2, delta)
@@ -152,12 +198,25 @@ function Character({ station, placement, layout, floor, onSelect, anchor }: { st
     const talking = station.state === 'Collaborating' && !walking && s.lie < 0.5
     const gait = Math.min(1, s.speed / 1.2)
     const stride = Math.sin(s.phase) * 0.62 * gait
-    const t = time + seed * 7
+    const t = time * Math.max(1, simulationRate / 60) + seed * 7
     // Keystrokes: irregular little bursts, with pauses where the agent reads the screen or thinks.
     const think = smooth(0.55, 0.9, Math.sin(t * 0.21) * Math.sin(t * 0.07 + 1.3) + 0.35)
     const tapL = Math.max(0, Math.sin(t * 17.3)) * (0.55 + 0.45 * Math.sin(t * 4.9)) * (1 - think)
     const tapR = Math.max(0, Math.sin(t * 13.1 + 2)) * (0.55 + 0.45 * Math.sin(t * 6.3 + 1)) * (1 - think)
     const reviewing = station.state === 'Reviewing'
+    const activity = station.activity.toLowerCase()
+    const praying = activity.includes('prayer') && prayerSessionStart > 0 && settled && !walking
+    const eating = /eat|breakfast|lunch|dinner|snack/.test(activity)
+    const drinking = /coffee|drink of water/.test(activity)
+    const showering = /showering|brushing teeth/.test(activity)
+    const playing = /playing games/.test(activity)
+    const usingPhone = /checking phone|messaging colleagues/.test(activity)
+    const clearingDishes = /clearing .* dishes|wiping the table|tidying the table/.test(activity)
+    const makingBed = /making the bed/.test(activity)
+    const reading = /reading/.test(activity)
+    const watchingTv = /watching tv/.test(activity)
+    const prayerElapsed = Math.max(0, performance.now() / 1000 - prayerSessionStart)
+    const prayerCycle = Math.min(24, (prayerElapsed / prayerCycleDuration) * 24)
     // Targets for every joint.
     const restLegs = -Math.PI / 2.2
     let legL = stride, legR = -stride
@@ -187,6 +246,77 @@ function Character({ station, placement, layout, floor, onSelect, anchor }: { st
     if (typing) { headYaw = Math.sin(t * 0.4) * 0.07 + think * glance * 0.6; headPitch = 0.16 + tapL * 0.02 - think * 0.1; headRoll = Math.sin(t * 0.8) * 0.03 }
     if (talking) { headPitch = 0.06 + Math.abs(Math.sin(t * 2.3)) * 0.07; headYaw = glance * 0.5 }
     if (walking) headPitch = 0.02
+    if (eating) {
+      const liftLeft = Math.max(0, Math.sin(t * 1.6 + seed))
+      const liftRight = Math.max(0, Math.sin(t * 1.35 + seed * 1.7))
+      armL = -0.7 - liftLeft * 0.42
+      armR = -0.7 - liftRight * 0.42
+      headPitch = 0.13 + Math.abs(Math.sin(t * 1.2)) * 0.07
+    }
+    if (drinking) {
+      armR = -1.15 + Math.sin(t * 1.5 + seed) * 0.08
+      armL = -0.25
+      headPitch = 0.16 + Math.max(0, Math.sin(t * 0.7)) * 0.1
+    }
+    if (showering) {
+      armL = -0.55 + Math.sin(t * 2.1 + seed) * 0.24
+      armR = -0.65 + Math.sin(t * 2.1 + seed + 1.4) * 0.28
+      armLz = -0.06; armRz = 0.06
+      headPitch = 0.12 + Math.sin(t * 1.1) * 0.05
+    }
+    if (playing) {
+      armL = -0.55 + Math.sin(t * 3 + seed) * 0.4
+      armR = -0.55 + Math.sin(t * 3.2 + seed + 1) * 0.4
+      headYaw = Math.sin(t * 0.6 + seed) * 0.2
+    }
+    if (makingBed && !walking) {
+      armL = -0.45 + Math.sin(t * 1.7 + seed) * 0.45
+      armR = -0.45 + Math.sin(t * 1.5 + seed + 1.2) * 0.45
+      armLz = 0.16; armRz = -0.16
+      headPitch = 0.22
+    }
+    if (reading && !walking) {
+      armL = -0.92 + Math.sin(t * 0.65 + seed) * 0.05
+      armR = -0.92 + Math.sin(t * 0.65 + seed + 1) * 0.05
+      armLz = 0.2; armRz = -0.2
+      headPitch = 0.22 + Math.sin(t * 0.7) * 0.025
+    }
+    if (watchingTv && !walking) {
+      armL = -0.4; armR = -0.4
+      headPitch = 0.02
+      headYaw = Math.sin(t * 0.33 + seed) * 0.08
+    }
+    if (usingPhone && !walking) {
+      armR = -0.95 + Math.sin(t * 2.8 + seed) * 0.08
+      armL = -0.35
+      headPitch = 0.28
+      headYaw = Math.sin(t * 0.45 + seed) * 0.06
+    }
+    if (clearingDishes && !walking) {
+      armL = -0.55 + Math.sin(t * 2.0 + seed) * 0.35
+      armR = -0.55 + Math.sin(t * 2.4 + seed + 1) * 0.35
+      armLz = 0.14; armRz = -0.14
+      headPitch = 0.18
+    }
+    let prayerStage: 'qiyam' | 'ruku' | 'itidal' | 'sujud' | 'sitting' | 'final-sitting' = 'qiyam'
+    let torsoTarget = 0
+    let torsoHeightTarget = 1.2
+    if ((prayerCycle >= 3 && prayerCycle < 5) || (prayerCycle >= 14.5 && prayerCycle < 16.5)) prayerStage = 'ruku'
+    else if ((prayerCycle >= 5 && prayerCycle < 6.2) || (prayerCycle >= 16.5 && prayerCycle < 17.8)) prayerStage = 'itidal'
+    else if ((prayerCycle >= 6.2 && prayerCycle < 8.2) || (prayerCycle >= 9.6 && prayerCycle < 11.6) || (prayerCycle >= 17.8 && prayerCycle < 19.8) || (prayerCycle >= 21.2 && prayerCycle < 23.2)) prayerStage = 'sujud'
+    else if ((prayerCycle >= 8.2 && prayerCycle < 9.6) || (prayerCycle >= 19.8 && prayerCycle < 21.2)) prayerStage = 'sitting'
+    else if (prayerCycle >= 23.2) prayerStage = 'final-sitting'
+    if (praying) {
+      // Synchronized two-rakat sequence: qiyam, ruku, itidal, two sujuds with a sitting between,
+      // then the second rakat and final sitting. Every participant uses the same session phase.
+      if (prayerStage === 'ruku') { torsoTarget = -0.58; torsoHeightTarget = 1.2; legL = legR = 0.04; armL = armR = -0.9; headPitch = 0.28 }
+      else if (prayerStage === 'itidal') { torsoTarget = -0.02; torsoHeightTarget = 1.2; armL = armR = -0.24; headPitch = 0.03 }
+      else if (prayerStage === 'sujud') { torsoTarget = -1.12; torsoHeightTarget = 0.46; legL = legR = -1.05; armL = armR = -0.05; headPitch = -0.3 }
+      else if (prayerStage === 'sitting' || prayerStage === 'final-sitting') { torsoTarget = -0.28; torsoHeightTarget = 0.72; legL = legR = -1.18; armL = armR = -0.32; headPitch = 0.08 }
+      else { torsoTarget = 0; torsoHeightTarget = 1.2; legL = legR = 0; armL = armR = -0.2; headPitch = 0.02 }
+      armLz = 0; armRz = 0
+      headYaw = 0
+    }
     if (s.lie > 0.5) { headYaw = 0; headPitch = 0; headRoll = Math.sin(t * 0.3) * 0.02 }
     // Body: bob and sway while walking, weight shifts / breathing while standing, settle into a seat.
     const breathe = Math.sin(t * (s.lie > 0.5 ? 1.1 : 1.9)) * (s.lie > 0.5 ? 0.012 : 0.008)
@@ -204,12 +334,21 @@ function Character({ station, placement, layout, floor, onSelect, anchor }: { st
     s.bobY = damp(s.bobY, bob, 14, delta)
     const targetY = s.lie * ((placement.height ?? 0.5) + 0.16) + (1 - s.lie) * (-0.14 * s.sit - 0.5 * s.floor)
     s.bodyY = damp(s.bodyY, targetY, 10, delta)
+    s.torsoX = damp(s.torsoX, praying ? torsoTarget : 0, 8, delta)
     if (leftLeg.current && rightLeg.current) { leftLeg.current.rotation.x = s.legL; rightLeg.current.rotation.x = s.legR }
     if (leftArm.current && rightArm.current) {
       leftArm.current.rotation.x = s.armL; rightArm.current.rotation.x = s.armR
       leftArm.current.rotation.z = s.armLz; rightArm.current.rotation.z = s.armRz
     }
-    if (head.current) head.current.rotation.set(s.headPitch, s.headYaw, s.headRoll)
+    if (torso.current) {
+      torso.current.rotation.x = s.torsoX
+      torso.current.position.y = damp(torso.current.position.y, praying ? torsoHeightTarget : 1.2, 8, delta)
+    }
+    if (head.current) {
+      head.current.rotation.set(s.headPitch, s.headYaw, s.headRoll)
+      const headY = praying && prayerStage === 'sujud' ? -0.15 : praying && (prayerStage === 'sitting' || prayerStage === 'final-sitting') ? -0.03 : 0.1
+      head.current.position.y = damp(head.current.position.y, headY, 8, delta)
+    }
     if (leftEye.current && rightEye.current) {
       const blink = (time + seed * 3) % 4.3 < 0.12 ? 0.1 : 1
       leftEye.current.scale.y = rightEye.current.scale.y = damp(leftEye.current.scale.y, s.lie > 0.5 ? 0.1 : blink, 40, delta)
@@ -221,27 +360,43 @@ function Character({ station, placement, layout, floor, onSelect, anchor }: { st
       body.current.rotation.z = s.sway
       body.current.position.y = s.bodyY + s.bobY + breathe
     }
+    // If a crowd push or an awkward corner stalls a walker, recompute its route from its current position.
+    const movement = progress.current
+    const moved = Math.hypot(group.position.x - movement.last.x, group.position.z - movement.last.z)
+    if (nodes.length > 0) {
+      movement.stuckSeconds = moved < 0.004 ? movement.stuckSeconds + delta : 0
+      if (movement.stuckSeconds > 2.5) {
+        path.current = walkPath3([group.position.x, group.position.y, group.position.z], placement.position, layout)
+          .map(([px, py, pz]) => new THREE.Vector3(px, py, pz))
+        movement.stuckSeconds = 0
+      }
+    } else {
+      movement.stuckSeconds = 0
+    }
+    movement.last.copy(group.position)
   })
 
   return <group ref={root} position={start}>
     <group ref={body} onClick={(event) => { event.stopPropagation(); onSelect(station, null) }} onPointerOver={() => { document.body.style.cursor = 'pointer' }} onPointerOut={() => { document.body.style.cursor = '' }}>
       <mesh ref={leftLeg} position={[-0.11, 0.66, 0]} castShadow geometry={legGeometry}><meshStandardMaterial color={tint(colors.pants)} roughness={0.8}/></mesh>
       <mesh ref={rightLeg} position={[0.11, 0.66, 0]} castShadow geometry={legGeometry}><meshStandardMaterial color={tint(colors.pants)} roughness={0.8}/></mesh>
-      <RBox position={[0, 0.98, 0]} size={[0.48, 0.58, 0.3]} radius={0.07} color={tint(colors.shirt)} roughness={0.85}/>
-      <mesh ref={leftArm} position={[-0.31, 1.2, 0]} castShadow geometry={armGeometry}><meshStandardMaterial color={tint(colors.shirt)} roughness={0.85}/></mesh>
-      <mesh ref={rightArm} position={[0.31, 1.2, 0]} castShadow geometry={armGeometry}><meshStandardMaterial color={tint(colors.shirt)} roughness={0.85}/></mesh>
-      {/* The head pivots at the neck so it can nod, turn and tilt. */}
-      <group ref={head} position={[0, 1.3, 0]}>
-        <group position={[0, -1.3, 0]}>
-          <RBox position={[0, 1.5, 0]} size={[0.4, 0.4, 0.37]} radius={0.08} color={tint(colors.skin)} roughness={0.7}/>
-          <RBox position={[0, 1.72, -0.02]} size={[0.43, 0.13, 0.41]} radius={0.05} color={tint(colors.hair)} roughness={0.9}/>
-          <RBox position={[0, 1.58, -0.19]} size={[0.43, 0.3, 0.06]} radius={0.03} color={tint(colors.hair)} roughness={0.9}/>
-          <group ref={leftEye} position={[-0.09, 1.52, 0.186]}><RBox position={[0, 0, 0]} size={[0.06, 0.07, 0.01]} radius={0.004} color="#17201e" shadow={false}/></group>
-          <group ref={rightEye} position={[0.09, 1.52, 0.186]}><RBox position={[0, 0, 0]} size={[0.06, 0.07, 0.01]} radius={0.004} color="#17201e" shadow={false}/></group>
-          <RBox position={[0, 1.4, 0.186]} size={[0.12, 0.025, 0.01]} radius={0.004} color="#9a5a44" shadow={false}/>
+      <group ref={torso} position={[0, 1.2, 0]}>
+        <RBox position={[0, -0.22, 0]} size={[0.48, 0.58, 0.3]} radius={0.07} color={tint(colors.shirt)} roughness={0.85}/>
+        <mesh ref={leftArm} position={[-0.31, 0, 0]} castShadow geometry={armGeometry}><meshStandardMaterial color={tint(colors.shirt)} roughness={0.85}/></mesh>
+        <mesh ref={rightArm} position={[0.31, 0, 0]} castShadow geometry={armGeometry}><meshStandardMaterial color={tint(colors.shirt)} roughness={0.85}/></mesh>
+        {/* Head and arms follow the torso pivot, so bows and prostration move as one body chain. */}
+        <group ref={head} position={[0, 0.1, 0]}>
+          <group position={[0, -1.3, 0]}>
+            <RBox position={[0, 1.5, 0]} size={[0.4, 0.4, 0.37]} radius={0.08} color={tint(colors.skin)} roughness={0.7}/>
+            <RBox position={[0, 1.72, -0.02]} size={[0.43, 0.13, 0.41]} radius={0.05} color={tint(colors.hair)} roughness={0.9}/>
+            <RBox position={[0, 1.58, -0.19]} size={[0.43, 0.3, 0.06]} radius={0.03} color={tint(colors.hair)} roughness={0.9}/>
+            <group ref={leftEye} position={[-0.09, 1.52, 0.186]}><RBox position={[0, 0, 0]} size={[0.06, 0.07, 0.01]} radius={0.004} color="#17201e" shadow={false}/></group>
+            <group ref={rightEye} position={[0.09, 1.52, 0.186]}><RBox position={[0, 0, 0]} size={[0.06, 0.07, 0.01]} radius={0.004} color="#17201e" shadow={false}/></group>
+            <RBox position={[0, 1.4, 0.186]} size={[0.12, 0.025, 0.01]} radius={0.004} color="#9a5a44" shadow={false}/>
+          </group>
         </group>
+        {station.id === 'boss' && <RBox position={[0, -0.05, 0.16]} size={[0.07, 0.25, 0.025]} radius={0.01} color="#d9b36b" shadow={false}/>}
       </group>
-      {station.id === 'boss' && <RBox position={[0, 1.08, 0.16]} size={[0.07, 0.25, 0.025]} radius={0.01} color="#d9b36b" shadow={false}/>}
       {unknown && <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.45, 0.55, 24]}/><meshBasicMaterial color="#e9c47b" transparent opacity={0.85}/></mesh>}
       <object3D ref={anchor} position={[0, 2.05, 0]}/>
     </group>
@@ -431,9 +586,181 @@ const FLOORS: { floor: Floor; label: string; title: string }[] = [
   { floor: 2, label: 'Kamar & Balkon', title: 'Lantai 2: bedroom, lesehan and balcony' },
   { floor: 1, label: 'Kantor', title: 'Lantai 1: office, lounge, pantry and game room' },
 ]
-/** One routine step lasts this long; the sequence repeats. */
-const ROUTINE_SLOT_MS = 28_000
-const ROUTINE = ['desk', 'desk', 'break', 'desk', 'meet', 'desk'] as const
+/**
+ * Daily routine times are interpreted in Asia/Jakarta (WIB).
+ * The approximate sunset prayer times can be adjusted here without changing the schedule engine.
+ */
+const PRAYER_TIMES = {
+  fajr: { start: 4 * 60 + 30, end: 5 * 60 },
+  dhuhr: { start: 12 * 60, end: 12 * 60 + 30 },
+  asr: { start: 16 * 60, end: 16 * 60 + 30 },
+  maghrib: { start: 18 * 60 + 5, end: 18 * 60 + 25 },
+  isha: { start: 19 * 60 + 15, end: 19 * 60 + 35 },
+} as const
+
+type DailyStop = 'desk' | 'meeting' | 'bathroom' | 'bathroom-queue' | 'bedroom' | 'tidur' | 'musholla' | 'dining' | 'bakso' | 'dapur' | 'lounge' | 'kopi' | 'galon' | 'game' | 'arcade' | 'balkon'
+type RoutineAction = { stop: DailyStop; state: OfficeStation['state']; activity: string; displayState: string; queueRank?: number }
+type SimulatedStation = OfficeStation & { routineStop: DailyStop; queueRank?: number }
+
+function jakartaMinuteOfDay(timestamp: number): number {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date(timestamp))
+  const hour = Number(parts.find((part) => part.type === 'hour')?.value ?? 0)
+  const minute = Number(parts.find((part) => part.type === 'minute')?.value ?? 0)
+  return hour * 60 + minute
+}
+
+/** Deterministic per-agent routine: staggered bathroom turns and varied shared-space destinations. */
+function dailyRoutine(station: OfficeStation, minute: number, crewCount: number): RoutineAction {
+  const seat = Math.max(station.seat, 1)
+  const count = Math.max(crewCount, 1)
+  const action = (stop: DailyStop, state: OfficeStation['state'], activity: string, displayState = activity, queueRank?: number): RoutineAction => ({
+    stop, state, activity, displayState, ...(queueRank === undefined ? {} : { queueRank }),
+  })
+  const choice = (stops: DailyStop[], offset = 0) => stops[(seat - 1 + offset) % stops.length]
+  /** Assign seats in capacity-sized blocks so a shared room never receives more agents than spots. */
+  const capacityChoice = (options: { stop: DailyStop; capacity: number }[], memberSeat = seat): DailyStop => {
+    let remaining = Math.max(0, Math.floor(memberSeat) - 1)
+    for (const option of options) {
+      if (remaining < option.capacity) return option.stop
+      remaining -= option.capacity
+    }
+    return options[options.length - 1]?.stop ?? 'dining'
+  }
+  // Dining has twelve reserved chairs. Extra agents use finite snack/relaxation spots instead
+  // of wrapping back onto an occupied dining seat.
+  const mealStop = () => seat <= 12 ? 'dining' : capacityChoice([
+    { stop: 'bakso', capacity: 3 },
+    { stop: 'kopi', capacity: 3 },
+    { stop: 'lounge', capacity: 3 },
+    { stop: 'balkon', capacity: 4 },
+  ], seat - 12)
+  const work = (wrapUp = false): RoutineAction => {
+    const reviewing = wrapUp ? seat % 2 === 0 : seat % 4 === 0
+    return action('desk', reviewing ? 'Reviewing' : 'Working', wrapUp ? (reviewing ? 'Reviewing final tasks' : 'Finishing work') : (reviewing ? 'Reviewing code and notes' : 'Working at the computer'), reviewing ? 'Reviewing' : 'Working')
+  }
+  const prayer = (name: string) => action('musholla', 'Idle', name, 'Praying')
+  // Give the furthest desk-to-stair-to-musholla route a 15-minute simulated head start.
+  const headingToPrayer = () => action('musholla', 'Idle', 'Heading to the musholla', 'Heading to prayer')
+
+  // Sleep is a fixed window, including after midnight, so agents never wake between schedule slots.
+  if (minute >= 22 * 60 || minute < PRAYER_TIMES.fajr.start) {
+    return action('tidur', 'Idle', 'Sleeping', 'Asleep')
+  }
+  if (minute < PRAYER_TIMES.fajr.end) return prayer('Fajr prayer')
+  if (minute < 6 * 60) {
+    // Six-minute turns give each agent a bathroom/shower slot while the rest get ready by their beds.
+    const turn = Math.floor((minute - 5 * 60) / 6)
+    const bathroomSeat = turn + 1
+    if (seat - 1 < turn) return action('bedroom', 'Idle', 'Getting dressed after showering', 'Getting ready')
+    if (seat === bathroomSeat) return action('bathroom', 'Idle', 'Showering · brushing teeth', 'Bathroom turn')
+    if (turn >= count) return action('bedroom', 'Idle', 'Getting dressed for work', 'Getting ready')
+    return action('bathroom-queue', 'Idle', `Waiting in bathroom queue · ${seat - turn - 1}`, 'In queue', seat - turn - 2)
+  }
+  if (minute < 7 * 60) {
+    const stop = mealStop()
+    if (minute >= 6 * 60 + 50 && stop === 'dining') return action(stop, 'Idle',
+      'Clearing breakfast dishes · wiping the table', 'Tidying dining area')
+    return action(stop, 'Idle', 'Breakfast · eating and chatting', 'Breakfast')
+  }
+  if (minute < 8 * 60) {
+    return minute < 7 * 60 + 20
+      ? action('bedroom', 'Idle', 'Making the bed · getting dressed', 'Morning prep')
+      : action('desk', 'Idle', 'Walking to the workplace', 'Heading to work')
+  }
+  if (minute >= PRAYER_TIMES.dhuhr.start - 15 && minute < PRAYER_TIMES.dhuhr.start) return headingToPrayer()
+  if (minute < PRAYER_TIMES.dhuhr.start) return work()
+  if (minute < PRAYER_TIMES.dhuhr.end) return prayer('Dhuhr prayer')
+  if (minute < 14 * 60) {
+    const stop = mealStop()
+    if (minute >= 13 * 60 + 50 && stop === 'dining') return action(stop, 'Idle',
+      'Clearing lunch dishes · wiping the table', 'Tidying dining area')
+    return action(stop, 'Idle', 'Lunch · eating with colleagues', 'Lunch break')
+  }
+  if (minute < 15 * 60 + 30) {
+    const block = Math.floor((minute - 14 * 60) / 30)
+    const joinsMeeting = (seat + block) % 3 === 0
+    return joinsMeeting
+      ? action('meeting', 'Collaborating', 'Team sync · sharing progress', 'In a meeting')
+      : work()
+  }
+  if (minute < PRAYER_TIMES.asr.start - 15) {
+    const options = [
+      { stop: 'kopi' as const, capacity: 3 },
+      { stop: 'galon' as const, capacity: 3 },
+      { stop: 'bakso' as const, capacity: 3 },
+      { stop: 'lounge' as const, capacity: 3 },
+      { stop: 'balkon' as const, capacity: 4 },
+      { stop: 'dining' as const, capacity: 12 },
+    ]
+    const offset = Math.floor((minute - (15 * 60 + 30)) / 10) % options.length
+    const stop = capacityChoice([...options.slice(offset), ...options.slice(0, offset)])
+    const activity = stop === 'kopi' ? 'Coffee break'
+      : stop === 'galon' ? 'Getting a drink of water'
+      : stop === 'dining' ? 'Snack break · socializing at the table'
+      : stop === 'balkon' ? 'Snack break · socializing on the balcony'
+      : 'Snack break · socializing'
+    return action(stop, 'Idle', activity, 'Break')
+  }
+  if (minute < PRAYER_TIMES.asr.start) return headingToPrayer()
+  if (minute < PRAYER_TIMES.asr.end) return prayer('Asr prayer')
+  if (minute < 17 * 60 + 30) return work(true)
+  if (minute < PRAYER_TIMES.maghrib.start - 15) {
+    const stop = capacityChoice([
+      { stop: 'lounge', capacity: 3 },
+      { stop: 'balkon', capacity: 4 },
+      { stop: 'game', capacity: 3 },
+      { stop: 'arcade', capacity: 3 },
+      { stop: 'dining', capacity: 12 },
+    ])
+    return action(stop, 'Idle', 'Unwinding after work', 'After work')
+  }
+  if (minute < PRAYER_TIMES.maghrib.start) return headingToPrayer()
+  if (minute < PRAYER_TIMES.maghrib.end) return prayer('Maghrib prayer')
+  if (minute < PRAYER_TIMES.isha.start - 15) {
+    const stop = mealStop()
+    if (minute >= PRAYER_TIMES.isha.start - 20 && stop === 'dining') {
+      return action(stop, 'Idle', 'Clearing dinner dishes · tidying the table', 'Tidying dining area')
+    }
+    return action(stop, 'Idle',
+      stop === 'dining' ? 'Dinner · eating and talking' : 'Dinner · finishing up and chatting', 'Dinner')
+  }
+  if (minute < PRAYER_TIMES.isha.start) return headingToPrayer()
+  if (minute < PRAYER_TIMES.isha.end) return prayer('Isha prayer')
+  if (minute < 21 * 60 + 30) {
+    const offset = Math.floor((minute - PRAYER_TIMES.isha.end) / 20)
+    const options = [
+      { stop: 'lounge' as const, capacity: 3 },
+      { stop: 'game' as const, capacity: 3 },
+      { stop: 'arcade' as const, capacity: 3 },
+      { stop: 'balkon' as const, capacity: 4 },
+      { stop: 'dining' as const, capacity: 12 },
+    ]
+    const rotation = offset % options.length
+    const stop = capacityChoice([...options.slice(rotation), ...options.slice(0, rotation)])
+    const activity = offset % 5 === 4 ? 'Checking phone and messaging colleagues'
+      : stop === 'lounge' ? 'Watching TV and chatting'
+      : stop === 'game' || stop === 'arcade' ? 'Playing games together'
+      : stop === 'balkon' ? 'Reading and relaxing on the balcony'
+      : 'Relaxing around the dining tables'
+    return action(stop, 'Idle', activity, 'Leisure')
+  }
+  if (minute < 22 * 60) {
+    const turn = Math.floor((minute - (21 * 60 + 30)) / 3)
+    const bathroomSeat = turn + 1
+    if (seat - 1 < turn) return action('bedroom', 'Idle', 'Getting ready for bed after brushing teeth', 'Getting ready for bed')
+    if (seat === bathroomSeat) return action('bathroom', 'Idle', 'Brushing teeth before bed', 'Bedtime routine')
+    if (turn >= count) return action('bedroom', 'Idle', 'Settling down for sleep', 'Getting ready for bed')
+    return action('bathroom-queue', 'Idle', `Waiting for the sink · queue ${seat - turn - 1}`, 'In queue', seat - turn - 2)
+  }
+  return action('tidur', 'Idle', 'Sleeping', 'Asleep')
+}
+
+const BATHROOM_QUEUE_VISIBLE_CAPACITY = 8
+const BATHROOM_SPOTS: Placement[] = [
+  { position: [8.2, FLOOR_HEIGHT, -3.75], facing: Math.PI, seated: false, label: 'Shower' },
+]
 
 const FLOOR_KEY = 'mc.officeFloor'
 const SLEEP_KEY = 'mc.officeSleep'
@@ -457,7 +784,7 @@ function useFloor(): [Floor, (floor: Floor) => void] {
   }]
 }
 
-export default function Office3D({ stations: crew, onSelect, themeOverride, focusRoom = 'all' }: { stations: OfficeStation[]; onSelect: (station: OfficeStation, trigger: HTMLElement | null) => void; themeOverride?: 'dark' | 'light'; focusRoom?: string }) {
+export default function Office3D({ stations: crew, onSelect, themeOverride, focusRoom = 'all', simulationNow = Date.now(), simulationRate = 60 }: { stations: OfficeStation[]; onSelect: (station: OfficeStation, trigger: HTMLElement | null) => void; themeOverride?: 'dark' | 'light'; focusRoom?: string; simulationNow?: number; simulationRate?: number }) {
   const anchors = useRef(new Map<string, THREE.Object3D>())
   const labels = useRef(new Map<string, HTMLElement>())
   const view = useRef<ViewHandle>(null)
@@ -467,19 +794,48 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
   const theme = themeOverride ?? documentTheme
   const [floor, setFloor] = useFloor()
   const [sleepMode, setSleepMode] = useStoredFlag(SLEEP_KEY)
+  const prayerSession = useRef({ key: '', startedAt: 0, ready: new Set<string>() })
+  const [, setPrayerSyncVersion] = useState(0)
   const now = useClock(2000)
-  // Every agent follows its own routine: desk work, a break somewhere in the building, a sync at the
-  // meeting table. Each is offset by its seat, so they leave and return at different times. The
-  // breaks and syncs reuse the idle-wander and meeting placements below, so nothing else changes.
-  const slot = Math.floor(now / ROUTINE_SLOT_MS)
-  const stations = crew.map((station): OfficeStation => {
-    const alreadyAway = (station.state === 'Idle' && station.room === 'Lounge') || station.roomPosition === 'meeting-area'
-    if (station.state === 'Offline' || alreadyAway) return station
-    const step = ROUTINE[(slot + Math.max(station.seat, 1)) % ROUTINE.length]
-    if (step === 'break') return { ...station, state: 'Idle', room: 'Lounge', activity: '', displayState: 'On break' }
-    if (step === 'meet') return { ...station, state: 'Collaborating', room: 'Workspace', roomPosition: 'meeting-area', activity: 'Quick sync' }
-    return station
+  const scheduleMinute = jakartaMinuteOfDay(simulationNow)
+  const stations = crew.map((station): SimulatedStation => {
+    const routine = dailyRoutine(station, scheduleMinute, crew.length)
+    const action = sleepMode && routine.state === 'Idle' && routine.stop !== 'tidur'
+      ? { ...routine, stop: 'tidur' as const, activity: 'Sleeping · manual sleep mode', displayState: 'Asleep' }
+      : routine
+    const atDesk = action.stop === 'desk'
+    const inMeeting = action.stop === 'meeting'
+    return {
+      ...station,
+      state: action.state,
+      room: atDesk || inMeeting ? 'Workspace' : 'Lounge',
+      roomPosition: inMeeting ? 'meeting-area' : atDesk ? 'desk' : 'daily-life',
+      activity: action.activity,
+      displayState: action.displayState,
+      routineStop: action.stop,
+      queueRank: action.queueRank,
+    }
   })
+  const prayerKey = stations.find((station) => /^(Fajr|Dhuhr|Asr|Maghrib|Isha) prayer$/.test(station.activity))?.activity ?? ''
+  if (!prayerKey) {
+    if (prayerSession.current.key) prayerSession.current = { key: '', startedAt: 0, ready: new Set<string>() }
+  } else if (prayerSession.current.key !== prayerKey) {
+    // Do not start the prayer clock from the schedule boundary. All participants must first
+    // physically reach their reserved mat/standing spot; the last arrival starts the shared phase.
+    prayerSession.current = { key: prayerKey, startedAt: 0, ready: new Set<string>() }
+  }
+  const prayerParticipants = stations.filter((station) => station.activity === prayerKey).length
+  const onPrayerReady = (id: string) => {
+    const session = prayerSession.current
+    if (!prayerKey || session.key !== prayerKey || session.startedAt > 0) return
+    session.ready.add(id)
+    if (session.ready.size >= prayerParticipants) {
+      session.startedAt = performance.now() / 1000
+      setPrayerSyncVersion((version) => version + 1)
+    }
+  }
+  const prayerSessionStart = prayerSession.current.startedAt
+  const prayerCycleDuration = Math.max(3, 18 * 60 / Math.max(simulationRate, 1))
 
   // One unlabeled desk per agent (hot desking); the building is sized for the crew.
   const layout = useMemo(() => createLayout(stations.length), [stations.length])
@@ -491,7 +847,53 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
   const wandering = (station: OfficeStation) => station.state === 'Idle' && station.room === 'Lounge' ? plan.get(station.seat) : undefined
   // Agents at the meeting table take the next free place around it.
   const meetingOrder = stations.filter((station) => station.roomPosition === 'meeting-area').map((station) => station.id)
-  const placement = (station: OfficeStation) => wandering(station)?.placement ?? placementFor(station, layout, Math.max(0, meetingOrder.indexOf(station.id)))
+  const reservationIndex = (stop: DailyStop, station: SimulatedStation) => stations
+    .filter((candidate) => candidate.routineStop === stop)
+    .sort((a, b) => a.seat - b.seat)
+    .findIndex((candidate) => candidate.id === station.id)
+  const placement = (station: SimulatedStation): Placement => {
+    const seat = Math.max(station.seat, 1)
+    if (station.routineStop === 'desk') return placementFor(station, layout)
+    if (station.routineStop === 'meeting') return placementFor(station, layout, Math.max(0, meetingOrder.indexOf(station.id)))
+    if (station.routineStop === 'musholla') return mushollaSpot(
+      Math.max(0, reservationIndex('musholla', station)),
+      stations.filter((candidate) => candidate.routineStop === 'musholla').length,
+    )
+    if (station.routineStop === 'dining') return diningSpot(Math.max(0, reservationIndex('dining', station)))
+    if (station.routineStop === 'bathroom-queue') {
+      const queueRank = Math.max(0, station.queueRank ?? reservationIndex('bathroom-queue', station))
+      // Keep the first eight people in a compact two-column queue outside the bathroom doorway.
+      // Further visitors wait at their own reserved bedroom holding spot until their turn advances.
+      if (queueRank < BATHROOM_QUEUE_VISIBLE_CAPACITY) return bathroomQueueSpot(queueRank)
+      const beds = layout.idleStops.find((stop) => stop.key === 'tidur')
+      const bed = beds?.spots[(seat - 1) % (beds.spots.length || 1)]
+      if (bed) return {
+        position: [bed.position[0] + 0.75, FLOOR_HEIGHT, bed.position[2] - 0.25],
+        facing: 0,
+        seated: false,
+        label: 'Bathroom queue · waiting area',
+      }
+      return bathroomQueueSpot(queueRank)
+    }
+    if (station.routineStop === 'bathroom') {
+      const brushing = station.activity.toLowerCase().includes('brushing teeth')
+      return brushing
+        ? { position: [8.1, FLOOR_HEIGHT, -3.25], facing: Math.PI, seated: false, label: 'Sink' }
+        : BATHROOM_SPOTS[0]
+    }
+    if (station.routineStop === 'bedroom' || station.routineStop === 'tidur') {
+      const beds = layout.idleStops.find((stop) => stop.key === 'tidur')
+      const bed = beds?.spots[(seat - 1) % (beds.spots.length || 1)]
+      if (bed) return station.routineStop === 'tidur'
+        ? bed
+        : { position: [bed.position[0] + 0.75, FLOOR_HEIGHT, bed.position[2] - 0.25], facing: 0, seated: false, label: 'Getting ready in the bedroom' }
+    }
+    const stop = layout.idleStops.find((item) => item.key === station.routineStop)
+    const stopSeat = reservationIndex(station.routineStop, station)
+    const spot = stop?.spots[stopSeat]
+    if (spot) return spot
+    return wandering(station)?.placement ?? placementFor(station, layout, Math.max(0, meetingOrder.indexOf(station.id)))
+  }
   const floorCount = (value: Floor) => stations.filter((station) => floorOf(placement(station).position) === value).length
   const occupiedSeats = new Set(stations.filter((station) => station.room === 'Workspace' && station.roomPosition !== 'meeting-area' && station.state !== 'Offline').map((station) => station.seat))
   useEffect(() => {
@@ -505,11 +907,11 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
       street: { floor: 1, target: [layout.gangCenterX, 0, 1.0], zoom: 0.6 },
       bedroom: { floor: 2, target: [-3.6, FLOOR_HEIGHT, -2.9], zoom: 0.52 },
       bathroom: { floor: 2, target: [8.5, FLOOR_HEIGHT, -4.0], zoom: 0.45 },
-      lesehan: { floor: 2, target: [4.3, FLOOR_HEIGHT, -3.0], zoom: 0.5 },
+      musholla: { floor: 2, target: [MUSHOLLA.x, FLOOR_HEIGHT, MUSHOLLA.z], zoom: 0.5 },
       balcony: { floor: 2, target: [2.6, FLOOR_HEIGHT, 5.4], zoom: 0.5 },
       boss: { floor: 1, target: [layout.desks[0]?.[0] ?? -2, 0, -0.3], zoom: 0.62 },
       focus: { floor: 1, target: [layout.building.minX / 2, 0, -2.5], zoom: 0.58 },
-      dining: { floor: 1, target: [8.2, 0, -2.2], zoom: 0.6 },
+      dining: { floor: 2, target: [(DINING.tableCenters[0] + DINING.tableCenters[1]) / 2, FLOOR_HEIGHT, DINING.z], zoom: 0.58 },
       pool: { floor: 1, target: layout.camera.target, zoom: 1 },
     }
     const selected = views[focusRoom] ?? views.all
@@ -526,18 +928,17 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
       <Lighting theme={theme}/>
       <Environment night={theme === 'dark'} layout={layout} floor={floor}/>
       {floor === 1 && layout.desks.map((position, index) => <WorkDesk key={index} position={position} active={occupiedSeats.has(index + 1)} withChair/>)}
-      {stations.map((station) => <Character key={station.id} station={station} placement={placement(station)} layout={layout} floor={floor} onSelect={onSelect} anchor={register(anchors, `agent-${station.id}`)}/>)}
+      {stations.map((station) => <Character key={station.id} station={station} placement={placement(station)} layout={layout} floor={floor} onSelect={onSelect} prayerSessionStart={prayerSessionStart} prayerCycleDuration={prayerCycleDuration} simulationRate={simulationRate} onPrayerReady={onPrayerReady} anchor={register(anchors, `agent-${station.id}`)}/>)}
       <LabelProjector anchors={anchors} labels={labels}/>
       <Controls key={layout.deskCount} ref={view} panMode={panMode} keyTarget={keyTarget} layout={layout} elevation={floor === 2 ? FLOOR_HEIGHT : 0}/>
     </Canvas>
     <div className="office-3d-labels">
       {stations.map((station) => {
         const badge = officeStateBadge(station.state)
-        const busy = ['Working', 'Reviewing', 'Collaborating'].includes(station.state)
         const idle = wandering(station)
         return <button key={station.id} ref={register(labels, `agent-${station.id}`)} type="button" className={`agent-tag-3d state-${station.state.toLowerCase()}`} onClick={(event) => onSelect(station, event.currentTarget)} aria-label={`${station.name}. ${station.state}.${station.activity ? ` ${station.activity}.` : ''}${idle ? ` ${idle.placement.label ?? idle.stop.label}.` : ''} Open station details.`}>
-          {busy && station.activity && <span className="speech speech-3d">{station.activity}</span>}
-          {idle && <span className={`speech speech-3d speech-idle${idle.placement.pose === 'lie' ? ' speech-sleep' : ''}`}>{idle.placement.pose === 'lie' ? '💤 ' : ''}{idle.placement.label ?? idle.stop.label}</span>}
+          {station.activity && <span className={`speech speech-3d${/sleep/i.test(station.activity) ? ' speech-sleep' : ''}`}>{station.activity}</span>}
+          {!station.activity && idle && <span className={`speech speech-3d speech-idle${idle.placement.pose === 'lie' ? ' speech-sleep' : ''}`}>{idle.placement.pose === 'lie' ? '💤 ' : ''}{idle.placement.label ?? idle.stop.label}</span>}
           <span className="agent-tag-row"><span className="pixel-station-name">{station.privacy === 'locked' ? '🔒 ' : ''}{station.name}</span><span className={`badge ${badge.tone}`}>{station.displayState ?? (station.state === 'Idle' ? 'Idle' : station.state)}</span></span>
         </button>
       })}

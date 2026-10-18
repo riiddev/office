@@ -76,6 +76,11 @@ export const BALCONY_TABLE: Vec3 = [0.6, FLOOR_HEIGHT, 5.5]
 export const HAMMOCK: Vec3 = [4.2, FLOOR_HEIGHT, 5.95]
 /** Lesehan corner upstairs: a low table on a carpet with floor cushions around it. */
 export const LESEHAN_TABLE: Vec3 = [4.3, FLOOR_HEIGHT, -3]
+/** Dedicated upstairs prayer room; supports twenty congregants plus one imam in straight rows. */
+export const MUSHOLLA = { x: 4.3, z: -3.0, facing: Math.PI, columns: 5, rows: 4, columnSpacing: 0.85, rowSpacing: 0.9, capacity: 21 }
+/** Two dining tables, six places per table (12 seats total), on the open part of lantai 2. */
+export const DINING = { tableCenters: [3.55, 6.05] as const, z: 1.6, length: 2.05, width: 1.05, seatOffsets: [-0.65, 0, 0.65] as const }
+/** Bathroom on lantai 2: entry is the opening in its front wall. */
 export const BATHROOM = { minX: 7.6, maxX: 9.5, minZ: -5.2, maxZ: -2.6 }
 /** Beds stand above the desk columns, in two rows with their heads to the back wall. */
 const BED_ROWS_Z = [-4.1, -1.6]
@@ -119,6 +124,42 @@ export interface OfficeLayout {
 
 const spot = (x: number, z: number, facing: number, seated = false, label?: string): Placement => ({ position: [x, 0, z], facing, seated, ...(label ? { label } : {}) })
 const upstairs = (x: number, z: number, facing: number, extra: Partial<Placement> = {}): Placement => ({ position: [x, FLOOR_HEIGHT, z], facing, seated: false, ...extra })
+
+/** Capacity includes the imam. Every partially filled active row is centered around the qibla axis. */
+export function mushollaSpot(index: number, groupSize = MUSHOLLA.capacity): Placement {
+  if (index === 0) return upstairs(MUSHOLLA.x, MUSHOLLA.z - 1.72, MUSHOLLA.facing, { label: 'Imam · front' })
+  const activeCapacity = Math.max(1, Math.min(MUSHOLLA.capacity, Math.floor(groupSize)))
+  const followerCount = activeCapacity - 1
+  const follower = index - 1
+  const row = Math.floor(follower / MUSHOLLA.columns)
+  const column = follower % MUSHOLLA.columns
+  const followersInRow = Math.min(MUSHOLLA.columns, Math.max(1, followerCount - row * MUSHOLLA.columns))
+  const centeredColumn = column - (followersInRow - 1) / 2
+  const x = MUSHOLLA.x + centeredColumn * MUSHOLLA.columnSpacing
+  const z = MUSHOLLA.z - 1.0 + row * MUSHOLLA.rowSpacing
+  return upstairs(x, z, MUSHOLLA.facing, { label: `Saf ${row + 1}` })
+}
+
+/** Reserved dining seats; side chairs face the table and have at least 0.65m lateral spacing. */
+export function diningSpot(index: number): Placement {
+  const tableIndex = Math.floor(index / 6) % DINING.tableCenters.length
+  const seat = index % 6
+  const column = seat < 3 ? seat : seat - 3
+  const x = DINING.tableCenters[tableIndex] + DINING.seatOffsets[column]
+  const frontSide = seat < 3
+  const z = DINING.z + (frontSide ? -0.86 : 0.86)
+  return upstairs(x, z, frontSide ? 0 : Math.PI, { seated: true, label: `Dining table ${tableIndex + 1} · seat ${seat + 1}` })
+}
+
+/** Eight near-door queue spots. Overflow callers wait in a reserved bedroom holding position. */
+export function bathroomQueueSpot(index: number): Placement {
+  const row = Math.floor(index / 2)
+  const column = index % 2
+  // Both columns stay clear of the front wall and east of the dining table edges.
+  const x = column === 0 ? 8.1 : 9.0
+  const z = -1.55 + row * 0.86
+  return upstairs(x, z, Math.PI, { label: `Bathroom queue · ${index + 1}` })
+}
 /** Lying in a bed: feet at the foot end, head on the pillow by the back wall. */
 export const bedSpot = ([x, , z]: Vec3, label?: string): Placement => upstairs(x, z + 0.95, 0, { pose: 'lie', height: 0.5, ...(label ? { label } : {}) })
 /** A spot given in a stall's own coordinates (as if unrotated), placed in the world. */
@@ -133,7 +174,6 @@ function stallSpot(stall: Vec3, x: number, z: number, facing: number, seated = f
  * no two share a spot while free ones remain.
  */
 function idleStops(building: OfficeLayout['building'], baksoCart: Vec3, kopiBike: Vec3, beds: Vec3[]): IdleStop[] {
-  const [tableX, , tableZ] = LESEHAN_TABLE
   return [
     { key: 'tidur', label: 'Sleeping', spots: beds.map((bed) => bedSpot(bed)) },
     { key: 'balkon', label: 'Relaxing on the balcony', spots: [
@@ -142,7 +182,8 @@ function idleStops(building: OfficeLayout['building'], baksoCart: Vec3, kopiBike
       upstairs(HAMMOCK[0] + 0.9, HAMMOCK[2], -Math.PI / 2, { pose: 'lie', height: 0.62, label: 'Napping in the hammock' }),
       upstairs(7.9, BALCONY.maxZ - 0.45, 0, { label: 'Enjoying the view from the balcony' }),
     ] },
-    { key: 'lesehan', label: 'Lesehan upstairs', spots: [[-1, 0, Math.PI / 2], [1, 0, -Math.PI / 2], [0, -0.85, 0], [0, 0.85, Math.PI]].map(([dx, dz, facing]) => upstairs(tableX + dx, tableZ + dz, facing, { pose: 'floor' })) },
+    { key: 'musholla', label: 'Musholla · prayer rows', spots: Array.from({ length: MUSHOLLA.capacity + 1 }, (_, index) => mushollaSpot(index)) },
+    { key: 'dining', label: 'Dining room', spots: Array.from({ length: DINING.tableCenters.length * 6 }, (_, index) => diningSpot(index)) },
     { key: 'lounge', label: 'Relaxing in the lounge', spots: LOUNGE_SEATS.map(([x, , z], index) => spot(x, z, LOUNGE_FACING[index], true)) },
     { key: 'galon', label: 'Getting water from the galon', spots: [spot(8.35, -0.4, Math.PI / 2), spot(8.2, -1.05, 2.2), spot(8.2, 0.3, 1.1)] },
     // On the gerobak's plastic stools, facing the cart.
@@ -282,10 +323,36 @@ function upperRoute(from: [number, number], to: [number, number], layout: Office
   const onBalcony = ([, z]: [number, number]) => z > BALCONY.minZ
   const doorX = (BALCONY_DOOR.fromX + BALCONY_DOOR.toX) / 2
   const inBedroom = ([x, z]: [number, number]) => x < PARTITION_X && z < -0.3
+  const inMusholla = ([x, z]: [number, number]) =>
+    x > MUSHOLLA.x - 2.45 && x < MUSHOLLA.x + 2.45 &&
+    z > MUSHOLLA.z - 2.35 && z < MUSHOLLA.z + 2.35
+  const inDiningRoom = ([x, z]: [number, number]) =>
+    x > DINING.tableCenters[0] - 1.1 && x < DINING.tableCenters[1] + 1.1 &&
+    z > DINING.z - 1.25 && z < DINING.z + 1.25
   // Beds share columns, so the back row is reached through the gap beside its column.
   const gapX = (x: number) => Math.min(x + DESK_PITCH / 2, PARTITION_X - 0.3)
-  const toAisle = (point: [number, number]): [number, number][] => onBalcony(point) ? [[point[0], BALCONY_LANE_Z], [doorX, BALCONY_LANE_Z], [doorX, AISLE_Z]]
-    : inBedroom(point) ? [[gapX(point[0]), point[1]], [gapX(point[0]), AISLE_Z]] : [[point[0], AISLE_Z]]
+  const toAisle = (point: [number, number]): [number, number][] => {
+    if (onBalcony(point)) return [[point[0], BALCONY_LANE_Z], [doorX, BALCONY_LANE_Z], [doorX, AISLE_Z]]
+    if (inBedroom(point)) return [[gapX(point[0]), point[1]], [gapX(point[0]), AISLE_Z]]
+    if (inMusholla(point)) {
+      // Funnel all walkers through a shared point inside the wide doorway. The slight x-offset
+      // keeps the route simplifier from collapsing this bend into a straight line through the wall.
+      const doorStepZ = MUSHOLLA.z + 2.85
+      const doorLaneX = MUSHOLLA.x + 0.2
+      return [[doorLaneX, doorStepZ], [doorLaneX, AISLE_Z]]
+    }
+    if (inDiningRoom(point)) {
+      // Both rows face the table. Leave each chair toward the table edge first, then turn around
+      // the nearest end of that table; routing straight back would cross the chair's backrest.
+      const tableIndex = point[0] <= (DINING.tableCenters[0] + DINING.tableCenters[1]) / 2 ? 0 : 1
+      const centerX = DINING.tableCenters[tableIndex]
+      const frontSide = point[1] < DINING.z
+      const clearZ = DINING.z + (frontSide ? -1 : 1) * (DINING.width / 2 + 0.18)
+      const sideLaneX = centerX + (tableIndex === 0 ? -1 : 1) * (DINING.length / 2 + 0.8)
+      return [[point[0], clearZ], [sideLaneX, clearZ], [sideLaneX, AISLE_Z]]
+    }
+    return [[point[0], AISLE_Z]]
+  }
   void layout
   return [from, ...toAisle(from), ...toAisle(to).reverse(), to]
 }
@@ -332,7 +399,7 @@ function simplify(from: [number, number], route: [number, number][], to: [number
 
 /** How long an idle agent stays at one stop (walking included). */
 export const IDLE_STOP_MS = 32_000
-export const IDLE_ROUTE = ['lounge', 'galon', 'balkon', 'game', 'bakso', 'tidur', 'jalan', 'arcade', 'lesehan', 'kopi', 'dapur', 'balkon', 'game', 'tidur']
+export const IDLE_ROUTE = ['lounge', 'galon', 'balkon', 'game', 'bakso', 'tidur', 'jalan', 'arcade', 'dining', 'kopi', 'dapur', 'balkon', 'game', 'tidur']
 
 export interface IdleAssignment { stop: IdleStop; placement: Placement }
 
@@ -346,7 +413,13 @@ export function idlePlan(seats: number[], time: number, layout: OfficeLayout = D
   const plan = new Map<number, IdleAssignment>()
   const taken = new Map<string, number>()
   const step = Math.floor(time / IDLE_STOP_MS)
-  const stopAt = (index: number) => layout.idleStops.find((item) => item.key === IDLE_ROUTE[index % IDLE_ROUTE.length])!
+  const stopAt = (index: number) => {
+    const key = IDLE_ROUTE[index % IDLE_ROUTE.length]
+    // Keep the idle planner resilient if a room key is renamed without updating the route table.
+    return layout.idleStops.find((item) => item.key === key)
+      ?? layout.idleStops.find((item) => item.key === 'lounge')
+      ?? layout.idleStops[0]
+  }
   // Sleepers (when the viewer sends idle agents to bed) stay in bed; they take the first beds.
   const beds = layout.idleStops.find((item) => item.key === 'tidur')!
   for (const seat of [...sleepers].sort((a, b) => a - b)) {

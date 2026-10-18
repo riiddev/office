@@ -615,9 +615,21 @@ export function WaterTank({ position }: { position: Vec3 }) {
 /** Kamar mandi fittings: bak mandi with a gayung, and a toilet. */
 export function BathroomFittings({ position }: { position: Vec3 }) {
   return <Group position={position}>
+    {/* Shower pan, faucet riser and glass splash screen: the reserved visitor spot is centred in front. */}
+    <RBox position={[0, 0.055, -1.15]} size={[0.9, 0.11, 0.9]} radius={0.025} color="#a9d6e7" roughness={0.3}/>
+    <RBox position={[-0.43, 0.75, -1.15]} size={[0.035, 1.4, 0.035]} radius={0.01} color="#8b9fa4" metalness={0.45}/>
+    <RBox position={[0.43, 0.75, -1.15]} size={[0.035, 1.4, 0.035]} radius={0.01} color="#8b9fa4" metalness={0.45}/>
+    <RBox position={[0, 1.45, -1.15]} size={[0.9, 0.035, 0.035]} radius={0.01} color="#8b9fa4" metalness={0.45}/>
+    <Cyl position={[0.1, 1.42, -1.35]} radius={0.11} height={0.035} color="#d8e6e8" metalness={0.35}/>
+    <RBox position={[-0.48, 0.85, -1.55]} size={[0.025, 1.55, 0.78]} radius={0.008} color="#b8e2ec" opacity={0.2} roughness={0.05} shadow={false}/>
     <RBox position={[0.95, 0.4, -1.75]} size={[0.9, 0.8, 0.7]} radius={0.03} color="#5aa9c9" roughness={0.3}/>
     <RBox position={[0.95, 0.79, -1.75]} size={[0.78, 0.02, 0.58]} radius={0.01} color="#9fd3ea" opacity={0.8} roughness={0.05} shadow={false}/>
     <Cyl position={[0.75, 0.86, -1.6]} radius={0.09} height={0.12} color="#e63946"/>
+    {/* Hand-washing sink and mirror by the door, outside the shower cubicle. */}
+    <RBox position={[-0.3, 0.69, -0.55]} size={[0.62, 0.08, 0.42]} radius={0.025} color="#f6f7f5" roughness={0.25}/>
+    <RBox position={[-0.3, 0.85, -0.55]} size={[0.38, 0.015, 0.27]} radius={0.05} color="#9fd3ea" opacity={0.8} roughness={0.05} shadow={false}/>
+    <Cyl position={[-0.3, 0.88, -0.48]} radius={0.025} height={0.12} color="#9aa8ad" metalness={0.55}/>
+    <RBox position={[-0.3, 1.28, -0.78]} size={[0.48, 0.58, 0.035]} radius={0.02} color="#c3e2ea" opacity={0.28} roughness={0.05} shadow={false}/>
     <RBox position={[-0.3, 0.2, -1.8]} size={[0.42, 0.4, 0.55]} radius={0.12} color="#f6f7f5" roughness={0.25}/>
     <RBox position={[-0.3, 0.6, -2.05]} size={[0.42, 0.45, 0.16]} radius={0.04} color="#f6f7f5" roughness={0.25}/>
   </Group>
