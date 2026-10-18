@@ -210,7 +210,7 @@ function App() {
 
       <section className="v-world-layout v-reveal" aria-label="Interactive virtual office">
         <div className="v-world-stage">
-          <RuangOffice night={night} focusRoom={activeRoom} onSelectAgent={setSelectedAgentId} simulationNow={simulationNow} />
+          <RuangOffice night={night} focusRoom={activeRoom} onSelectAgent={setSelectedAgentId} simulationNow={simulationNow} simulationRate={timeScale} />
 
           <div className="v-stage-topline">
             <span className="v-stage-live"><i /> WORLD VIEW</span>
