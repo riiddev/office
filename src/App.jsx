@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { createOffice } from './scene/createOffice.js';
 import { characters } from './data/characters.js';
