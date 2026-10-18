@@ -10,6 +10,9 @@ const rooms = [
   { id: 'meeting', label: 'War room', icon: '◫' },
   { id: 'lounge', label: 'Lounge', icon: '▱' },
   { id: 'games', label: 'Game room', icon: '✦' },
+  { id: 'dining', label: 'Dining', icon: '♧' },
+  { id: 'bathroom', label: 'Bathroom', icon: '⌁' },
+  { id: 'pool', label: 'Pool deck', icon: '≈' },
   { id: 'pantry', label: 'Pantry', icon: '☕' },
 ];
 const tasks = [
