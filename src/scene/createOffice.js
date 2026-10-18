@@ -993,30 +993,99 @@ export function createOffice(host, { onSelect } = {}) {
     characterGroups.forEach((character, i) => {
       const motion = character.userData.motion;
       if (character.userData.statusOrb && character.userData.statusRing) {
-        const pulse = 1 + Math.sin(elapsed * 2.7 + motion.phase) * 0.08;
+        const pulse = 1 + Math.sin(elapsed * 2.35 + motion.phase) * 0.065;
         character.userData.statusOrb.scale.setScalar(pulse);
-        character.userData.statusRing.rotation.z += delta * 0.2;
+        character.userData.statusRing.rotation.z += delta * 0.14;
       }
-      const target = motion.points[motion.target];
-      const dx = target[0] - character.position.x;
-      const dz = target[2] - character.position.z;
-      const distance = Math.sqrt(dx * dx + dz * dz);
-      if (!reducedMotion && distance > 0.12) {
-        const step = motion.speed * delta;
-        character.position.x += (dx / distance) * Math.min(step, distance);
-        character.position.z += (dz / distance) * Math.min(step, distance);
-        character.rotation.y = Math.atan2(dx, dz);
-        motion.legs[0].rotation.x = Math.sin(elapsed * 9 + motion.phase) * 0.4;
-        motion.legs[1].rotation.x = -Math.sin(elapsed * 9 + motion.phase) * 0.4;
-        character.position.y = Math.abs(Math.sin(elapsed * 9 + motion.phase)) * 0.035;
-      } else if (distance <= 0.12) {
+      if (reducedMotion) return;
+
+      if (motion.walking) {
+        const waypoint = motion.route[motion.pathIndex];
+        if (!waypoint) {
+          motion.walking = false;
+          motion.walkTimer = 1.2 + (i % 3) * 0.9;
+          return;
+        }
+        const dx = waypoint[0] - character.position.x;
+        const dz = waypoint[1] - character.position.z;
+        const distance = Math.hypot(dx, dz);
+        if (distance < 0.16) {
+          if (motion.pathIndex < motion.route.length - 1) {
+            motion.pathIndex++;
+          } else {
+            character.position.x = waypoint[0];
+            character.position.z = waypoint[1];
+            motion.walking = false;
+            motion.walkTimer = 1.25 + (i % 3) * 0.8;
+            motion.legs.forEach((leg) => { leg.rotation.x = 0; leg.rotation.z = 0; });
+            motion.arms.forEach((arm) => { arm.rotation.x = 0; arm.rotation.z = 0; });
+          }
+          return;
+        }
+
+        const desiredAngle = Math.atan2(dx, dz);
+        const angleDelta = Math.atan2(
+          Math.sin(desiredAngle - character.rotation.y),
+          Math.cos(desiredAngle - character.rotation.y)
+        );
+        character.rotation.y += angleDelta * Math.min(1, delta * 6.8);
+        // Ease in and out at each corner so the little people do not snap-turn.
+        const ease = THREE.MathUtils.clamp(distance * 1.8, 0.24, 1);
+        const step = Math.min(motion.speed * delta * ease, distance);
+        let nextX = character.position.x + (dx / distance) * step;
+        let nextZ = character.position.z + (dz / distance) * step;
+
+        // A small separation impulse prevents teammates from occupying the
+        // same point in a narrow aisle while still respecting static blockers.
+        for (let j = 0; j < characterGroups.length; j++) {
+          if (i === j) continue;
+          const other = characterGroups[j];
+          const sepX = nextX - other.position.x;
+          const sepZ = nextZ - other.position.z;
+          const sep = Math.hypot(sepX, sepZ);
+          if (sep > 0.001 && sep < 0.56) {
+            const push = (0.56 - sep) * 0.45;
+            const pushedX = nextX + (sepX / sep) * push;
+            const pushedZ = nextZ + (sepZ / sep) * push;
+            if (!navBlockedAt(pushedX, pushedZ)) { nextX = pushedX; nextZ = pushedZ; }
+          }
+        }
+        if (!navBlockedAt(nextX, nextZ)) {
+          character.position.x = nextX;
+          character.position.z = nextZ;
+        } else {
+          const target = motion.points[motion.target];
+          motion.route = findWalkPath(character.position, { x: target[0], z: target[2] });
+          motion.pathIndex = 0;
+        }
+
+        const stride = Math.sin(elapsed * 10.5 + motion.phase);
+        motion.legs[0].rotation.x = stride * 0.43;
+        motion.legs[1].rotation.x = -stride * 0.43;
+        motion.legs[0].rotation.z = Math.cos(elapsed * 5.25 + motion.phase) * 0.025;
+        motion.legs[1].rotation.z = -Math.cos(elapsed * 5.25 + motion.phase) * 0.025;
+        motion.arms[0].rotation.x = -stride * 0.31;
+        motion.arms[1].rotation.x = stride * 0.31;
+        motion.arms[0].rotation.z = -Math.sin(elapsed * 5.25 + motion.phase) * 0.035;
+        motion.arms[1].rotation.z = Math.sin(elapsed * 5.25 + motion.phase) * 0.035;
+        character.position.y = Math.abs(Math.sin(elapsed * 10.5 + motion.phase)) * 0.035;
+        if (motion.body) motion.body.rotation.z = -Math.sin(angleDelta) * 0.035;
+      } else {
         motion.walkTimer -= delta;
+        character.position.y = Math.sin(elapsed * 1.3 + motion.phase) * 0.012;
         motion.legs[0].rotation.x = 0;
         motion.legs[1].rotation.x = 0;
-        character.position.y = Math.sin(elapsed * 1.5 + motion.phase) * 0.018;
+        motion.legs[0].rotation.z = 0;
+        motion.legs[1].rotation.z = 0;
+        motion.arms[0].rotation.x = Math.sin(elapsed * 0.8 + motion.phase) * 0.035;
+        motion.arms[1].rotation.x = -Math.sin(elapsed * 0.8 + motion.phase) * 0.035;
+        if (motion.body) motion.body.rotation.z = Math.sin(elapsed * 0.65 + motion.phase) * 0.012;
         if (motion.walkTimer <= 0) {
           motion.target = (motion.target + 1) % motion.points.length;
-          motion.walkTimer = 1.1 + (i % 3) * 0.9;
+          const target = motion.points[motion.target];
+          motion.route = findWalkPath(character.position, { x: target[0], z: target[2] });
+          motion.pathIndex = 0;
+          motion.walking = true;
         }
       }
     });
