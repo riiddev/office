@@ -201,7 +201,7 @@ export function createOffice(host, { onSelect } = {}) {
   addPlant(12.0, 1.8, 0.7);
 
   // Small reading / meeting table with round poufs.
-  const meeting = group(scene, 'reading corner', [2.9, 0, -2.8]);
+  const meeting = group(scene, 'reading corner', [-0.5, 0, -0.2]);
   cylinder(meeting, 'round tabletop', 1.05, 1.05, 0.16, [0, 0.95, 0], mats.woodLight, 24);
   cylinder(meeting, 'table leg', 0.13, 0.25, 0.88, [0, 0.47, 0], mats.wood);
   for (let i = 0; i < 3; i++) {
@@ -244,7 +244,7 @@ export function createOffice(host, { onSelect } = {}) {
   box(game, 'console display', [1.13, 0.62, 0.035], [0, 1.15, 1.005], material('#9fc9ad', 0.25, { emissive: '#6d9b8c', emissiveIntensity: 0.35 }));
   box(game, 'console shelf', [1.8, 0.16, 0.5], [0, 0.55, 1.08], mats.woodLight);
   for (let i = 0; i < 2; i++) {
-    const bean = sphere(game, 'bean bag', 0.55, [i ? 1.3 : -1.35, 0.38, 1.6], i ? mats.terracotta : mats.sofa, [1.1, 0.7, 1.1]);
+    const bean = sphere(game, 'bean bag', 0.55, [i ? 1.3 : -1.35, 0.38, 1.05], i ? mats.terracotta : mats.sofa, [1.1, 0.7, 1.1]);
   }
 
   // Pantry with fridge, counter, coffee machine and tiny galon.
@@ -538,14 +538,14 @@ export function createOffice(host, { onSelect } = {}) {
   const characterGroups = [];
   const waypoints = [
     [[-7.5, 0, -1.15], [-5.3, 0, -1.1], [-3.6, 0, -1.15], [-7.8, 0, -1.15]],
-    [[-4.4, 0, -0.8], [-1.5, 0, -0.8], [0.7, 0, -0.5], [-4.5, 0, -0.4]],
-    [[1.8, 0, -0.8], [3.1, 0, -0.75], [3.2, 0, 1.2], [1.8, 0, -0.8]],
+    [[-4.4, 0, -0.8], [-2.5, 0, -0.8], [-2.5, 0, 1.4], [-4.5, 0, -0.4]],
+    [[1.8, 0, -0.8], [2.9, 0, -0.6], [2.6, 0, 1.6], [1.8, 0, -0.8]],
     [[9.2, 0, 2.7], [11.5, 0, 2.7], [12.0, 0, -2.7], [9.2, 0, -2.8]],
     [[-7.8, 0, 3.8], [-7.5, 0, 6.2], [-7.8, 0, 6.7], [-8.0, 0, 4.0]],
     [[3.2, 0, -0.9], [3.4, 0, 1.3], [2.1, 0, 1.4], [3.2, 0, -0.9]],
     [[8.4, 0, -2.8], [8.4, 0, -2.3], [8.4, 0, -2.8], [9.1, 0, -2.3]],
     [[9.4, 0, 3.2], [9.4, 0, 6.2], [11.6, 0, 6.2], [9.4, 0, 3.2]],
-    [[-1.8, 0, -1.2], [0.2, 0, -1.0], [1.6, 0, -1.0], [-0.2, 0, -1.3]]
+    [[1.6, 0, -1.1], [2.0, 0, -1.1], [2.2, 0, 1.5], [1.6, 0, -1.1]]
   ];
   // Navigation mesh: padded furniture footprints and room partitions. All agents
   // use the same route planner so their paths bend around props instead of
@@ -576,7 +576,7 @@ export function createOffice(host, { onSelect } = {}) {
     { x1: 4.44, x2: 4.68, z1: -5.62, z2: -3.55 },
     { x1: 7.56, x2: 7.8, z1: -5.62, z2: -3.55 },
     // Reading nook, bookcase, lounge, and arcade room.
-    { x1: 1.42, x2: 4.48, z1: -4.45, z2: -1.22 },
+    { x1: -1.95, x2: 1.2, z1: -2.0, z2: 1.25 },
     { x1: -9.16, x2: -8.04, z1: -3.08, z2: -0.12 },
     { x1: 3.78, x2: 8.03, z1: -2.48, z2: 1.02 },
     // Divider panels between lounge and gaming room, with a walk-through gap.
