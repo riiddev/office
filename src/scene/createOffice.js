@@ -528,11 +528,11 @@ export function createOffice(host, { onSelect } = {}) {
     [[-7.5, 0, -1.15], [-5.3, 0, -1.1], [-3.6, 0, -1.15], [-7.8, 0, -1.15]],
     [[-4.4, 0, -0.8], [-1.5, 0, -0.8], [0.7, 0, -0.5], [-4.5, 0, -0.4]],
     [[1.8, 0, -0.8], [3.1, 0, -0.75], [3.2, 0, 1.2], [1.8, 0, -0.8]],
-    [[8.9, 0, 2.7], [11.5, 0, 2.7], [11.8, 0, -2.8], [9.1, 0, -2.8]],
+    [[9.2, 0, 2.7], [11.5, 0, 2.7], [12.0, 0, -2.7], [9.2, 0, -2.8]],
     [[-7.8, 0, 3.8], [-7.5, 0, 6.2], [-7.8, 0, 6.7], [-8.0, 0, 4.0]],
-    [[3.2, 0, -2.7], [4.0, 0, -2.8], [6.5, 0, -2.8], [5.0, 0, -2.7]],
-    [[4.2, 0, -2.8], [7.6, 0, -2.8], [8.5, 0, -2.6], [5.0, 0, -2.6]],
-    [[9.0, 0, 2.8], [11.4, 0, 2.8], [11.8, 0, -2.9], [9.4, 0, -2.9]],
+    [[3.2, 0, -0.9], [3.4, 0, 1.3], [2.1, 0, 1.4], [3.2, 0, -0.9]],
+    [[8.4, 0, -2.8], [8.4, 0, -2.3], [8.4, 0, -2.8], [9.1, 0, -2.3]],
+    [[9.2, 0, 2.8], [11.5, 0, 2.8], [12.0, 0, -2.9], [9.4, 0, -2.9]],
     [[-1.8, 0, -1.2], [0.2, 0, -1.0], [1.6, 0, -1.0], [-0.2, 0, -1.3]]
   ];
   // Navigation mesh: padded furniture footprints and room partitions. All agents
@@ -756,13 +756,17 @@ export function createOffice(host, { onSelect } = {}) {
     const hair = material(info.hair);
     sphere(c, 'head', 0.27, [0, 1.25, 0], skin, [0.88, 1.02, 0.88]);
     sphere(c, 'hair', 0.275, [0, 1.39, -0.035], hair, [0.9, 0.55, 0.9]);
-    sphere(c, 'body', 0.28, [0, 0.77, 0], shirt, [0.83, 1.08, 0.62]);
-    sphere(c, 'arm-left', 0.105, [-0.28, 0.77, 0], skin, [0.82, 1.2, 0.82]);
-    sphere(c, 'arm-right', 0.105, [0.28, 0.77, 0], skin, [0.82, 1.2, 0.82]);
-    const legL = cylinder(c, 'leg-left', 0.085, 0.095, 0.4, [-0.12, 0.33, 0], mats.navy, 8);
-    const legR = cylinder(c, 'leg-right', 0.085, 0.095, 0.4, [0.12, 0.33, 0], mats.navy, 8);
-    sphere(c, 'shoe-left', 0.12, [-0.12, 0.12, 0.04], mats.cream, [1, 0.58, 1.35]);
-    sphere(c, 'shoe-right', 0.12, [0.12, 0.12, 0.04], mats.cream, [1, 0.58, 1.35]);
+    const characterBody = sphere(c, 'body', 0.28, [0, 0.77, 0], shirt, [0.83, 1.08, 0.62]);
+    const armL = group(c, 'left arm pivot', [-0.23, 0.94, 0]);
+    const armR = group(c, 'right arm pivot', [0.23, 0.94, 0]);
+    sphere(armL, 'arm-left', 0.105, [-0.045, -0.17, 0], skin, [0.82, 1.2, 0.82]);
+    sphere(armR, 'arm-right', 0.105, [0.045, -0.17, 0], skin, [0.82, 1.2, 0.82]);
+    const legL = group(c, 'left leg pivot', [-0.12, 0.47, 0]);
+    const legR = group(c, 'right leg pivot', [0.12, 0.47, 0]);
+    cylinder(legL, 'leg-left', 0.085, 0.095, 0.4, [0, -0.14, 0], mats.navy, 8);
+    cylinder(legR, 'leg-right', 0.085, 0.095, 0.4, [0, -0.14, 0], mats.navy, 8);
+    sphere(legL, 'shoe-left', 0.12, [0, -0.34, 0.04], mats.cream, [1, 0.58, 1.35]);
+    sphere(legR, 'shoe-right', 0.12, [0, -0.34, 0.04], mats.cream, [1, 0.58, 1.35]);
     const face = material('#4b3b33');
     sphere(c, 'eye-left', 0.025, [-0.085, 1.27, 0.232], face, [1, 1, 0.5]);
     sphere(c, 'eye-right', 0.025, [0.085, 1.27, 0.232], face, [1, 1, 0.5]);
@@ -776,7 +780,12 @@ export function createOffice(host, { onSelect } = {}) {
     c.add(stateRing);
     c.userData.statusOrb = stateOrb;
     c.userData.statusRing = stateRing;
-    c.userData.motion = { points: waypoints[i], target: 1, speed: 0.45 + (i % 3) * 0.09, phase: i * 1.8, legs: [legL, legR], walkTimer: 1.2 + i * 0.7 };
+    c.userData.motion = {
+      points: waypoints[i], target: 1, speed: 0.92 + (i % 3) * 0.1,
+      phase: i * 1.8, legs: [legL, legR], arms: [armL, armR], body: characterBody,
+      route: findWalkPath(c.position, { x: waypoints[i][1][0], z: waypoints[i][1][2] }),
+      pathIndex: 0, walking: true, walkTimer: 1.2 + i * 0.7
+    };
     characterGroups.push(c);
   });
 
