@@ -60,3 +60,8 @@ Vite outputs the production frontend into `dist/`. For Vercel, use build command
 - Use room buttons to focus the camera.
 - Click a character to select that agent in the dashboard.
 - Switch between daytime and nighttime with the sun/moon button.
+
+
+## 3D office reference
+
+The low-poly cutaway office world in this project is adapted from [Ruang by yugienugraha](https://github.com/yugienugraha/ruang), used under its MIT License. See `LICENSE-RUANG.md`. The UI shell and protected GitHub task-dispatch flow remain specific to this project.
