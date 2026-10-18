@@ -5,6 +5,76 @@ import { agents, characters } from '../data/characters.js';
 
 const material = (color, roughness = 0.85, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness, ...extra });
 
+
+const GROUND=0.05,DESKS=[[-6.7,-3.35],[-3.5,-3.35],[-0.25,-3.35],[3,-4.65],[6.05,-4.65],[9.1,-4.65]],MEET={x:10.6,z:0.1,rx:1.75,rz:1.45};
+const MEET_CHAIRS=[45,135,225,315].map(d=>{const a=d*Math.PI/180,x=MEET.x+Math.cos(a)*MEET.rx,z=MEET.z+Math.sin(a)*MEET.rz;return{x,z,face:Math.atan2(MEET.x-x,MEET.z-z),out:[Math.cos(a),Math.sin(a)]};});
+const NOOK={x:-11.1,z:-3.4,r:1.4},NOOK_POUFS=[0,120,240].map(d=>{const a=d*Math.PI/180,x=NOOK.x+Math.cos(a)*NOOK.r,z=NOOK.z+Math.sin(a)*NOOK.r;return{x,z,face:Math.atan2(NOOK.x-x,NOOK.z-z),out:[Math.cos(a),Math.sin(a)]};});
+const DINE={x:-7.2,z:6.1},DINE_CHAIRS=[{x:-8.2,z:5.5,face:Math.PI/2},{x:-8.2,z:6.7,face:Math.PI/2},{x:-6.2,z:5.5,face:-Math.PI/2},{x:-6.2,z:6.7,face:-Math.PI/2}];
+const POOL={x:11.3,z:5.65,iw:2.6,id:3.1},waterMat=new THREE.MeshStandardMaterial({color:'#6fc3d1',roughness:0.1,metalness:0.1,transparent:true,opacity:0.62,emissive:'#2c7f8f',emissiveIntensity:0.25});
+const WALLS=[
+{axis:'x',c:-0.2,a:-12.9,b:1.4,gaps:[[-5.9,-4.5],[-11.7,-10.3]],h:1.3},
+{axis:'z',c:1.4,a:-7.5,b:-0.2,gaps:[[-3.7,-2.3]],h:1.3},
+{axis:'x',c:-2.05,a:1.4,b:12.9,gaps:[[3.4,4.8]],h:1.3},
+{axis:'z',c:3.1,a:-2,b:5.3,gaps:[[-0.1,1.5],[2.3,3.7]],h:1.3},
+{axis:'x',c:2.1,a:3.1,b:8.8,gaps:[[7.4,8.7]],h:1.3},
+{axis:'z',c:8.8,a:2.1,b:7.6,gaps:[[4.8,6.2]],h:1.3},
+{axis:'x',c:4.3,a:-12.9,b:-9.9,gaps:[],h:2.1},
+{axis:'z',c:-9.9,a:4.3,b:7.6,gaps:[[5.1,6.5]],h:1.3,style:'frost'},
+{axis:'x',c:7.6,a:-12.9,b:-9.9,gaps:[],h:1,style:'frost'},
+{axis:'z',c:-9.9,a:1,b:4.3,gaps:[],h:1.3},
+{axis:'x',c:4.1,a:-9.9,b:-4.55,gaps:[[-8.6,-7.2]],h:1.2},
+{axis:'z',c:-4.55,a:1.4,b:7.6,gaps:[[4.9,6.3]],h:1.3}];
+const wallSegments=w=>{const pts=[w.a,...[...w.gaps].sort((p,q)=>p[0]-q[0]).flat(),w.b],out=[];for(let i=0;i<pts.length-1;i+=2){const s=pts[i],e=pts[i+1],len=e-s;if(len<0.05)continue;const m=(s+e)/2;out.push(w.axis==='x'?{x:m,z:w.c,sx:len,sz:0.1}:{x:w.c,z:m,sx:0.1,sz:len});}return out;};
+const BLOCKS=[],blk=(x,z,w,d)=>BLOCKS.push([x,z,w,d]);
+DESKS.forEach(([x,z])=>{blk(x,z,2.6,1.25);blk(x,z+1.04,0.8,0.8);});
+blk(-1.65,2.5,3.7,1.1);blk(-1.65,3.85,0.8,0.8);blk(-3.75,3.73,0.75,0.7);blk(0.45,3.73,0.75,0.7);
+blk(MEET.x,MEET.z,2.1,2.1);MEET_CHAIRS.forEach(c=>blk(c.x,c.z,0.7,0.7));
+blk(5.9,-1.12,3.5,1.25);blk(5.9,1.05,2.1,1);blk(8,-1.15,0.7,0.7);blk(5.05,2.55,0.9,0.7);blk(6.75,2.55,0.9,0.7);blk(6.2,4.58,1.9,0.6);blk(4.15,4.2,1.1,1.1);blk(7.9,4.2,1.1,1.1);
+blk(-6.6,2.3,4.1,1.4);blk(-7.8,1.35,0.9,0.9);blk(-8.6,-1.6,0.8,2.3);NOOK_POUFS.forEach(p=>blk(p.x,p.z,0.9,0.9));
+[[-11.9,-6.45],[11.75,-6.35]].forEach(([x,z])=>blk(x,z,0.7,0.7));blk(DINE.x,DINE.z,0.9,2.2);DINE_CHAIRS.forEach(c=>blk(c.x,c.z,0.6,0.6));
+blk(-12.2,4.85,0.7,0.9);blk(-10.7,4.85,1.4,1);blk(-12.55,6.7,0.6,1.2);blk(POOL.x,POOL.z,POOL.iw+0.4,POOL.id+0.4);
+BLOCKS.push([-13,-5.15,5.6,0.3],[-15.74,-2.4,0.28,5.6],[-10.43,-4.6,0.28,1.1],[-10.43,-0.2,0.28,1.1],[-15.15,0.28,1.25,0.28],[-11,0.28,1.4,0.28],[-14.65,-4.55,1.35,0.7],[-11.55,-4.55,1.35,0.7],[-13.9,-2.25,2,1.26],[-13.9,-1.3,0.8,0.84]);
+function createNav(blocks,walls){
+ const X0=-13,Z0=-7.7,CS=0.15,W=Math.ceil(26/CS)+1,H=Math.ceil(15.4/CS)+1,grid=new Uint8Array(W*H),ci=x=>Math.floor((x-X0)/CS),cj=z=>Math.floor((z-Z0)/CS);
+ const rect=(cx,cz,w,d)=>{for(let i=Math.max(0,ci(cx-w/2-0.22));i<=Math.min(W-1,ci(cx+w/2+0.22));i++)for(let j=Math.max(0,cj(cz-d/2-0.22));j<=Math.min(H-1,cj(cz+d/2+0.22));j++)grid[j*W+i]=1;};
+ blocks.forEach(b=>rect(...b));walls.forEach(w=>wallSegments(w).forEach(s=>rect(s.x,s.z,s.sx,s.sz)));
+ for(let i=0;i<W;i++)for(let j=0;j<H;j++){const x=X0+(i+.5)*CS,z=Z0+(j+.5)*CS;if(x< -12.7||x>12.7||z< -7.35||z>7.35)grid[j*W+i]=1;}
+ const free=(x,z)=>{const i=ci(x),j=cj(z);return i>=0&&j>=0&&i<W&&j<H&&!grid[j*W+i];},center=(i,j)=>({x:X0+(i+.5)*CS,z:Z0+(j+.5)*CS});
+ const nearestCell=(x,z)=>{const i0=ci(x),j0=cj(z);for(let r=0;r<40;r++){let best=null,bd=Infinity;for(let j=j0-r;j<=j0+r;j++)for(let i=i0-r;i<=i0+r;i++){if(Math.max(Math.abs(i-i0),Math.abs(j-j0))!==r||i<0||j<0||i>=W||j>=H||grid[j*W+i])continue;const d=(i-i0)**2+(j-j0)**2;if(d<bd){bd=d;best={i,j};}}if(best)return best;}return null;};
+ const clear=(a,b)=>{const n=Math.ceil(Math.hypot(b.x-a.x,b.z-a.z)/0.07);for(let k=1;k<n;k++)if(!free(a.x+(b.x-a.x)*k/n,a.z+(b.z-a.z)*k/n))return false;return true;};
+ const path=(sx,sz,tx,tz)=>{const s=nearestCell(sx,sz),t=nearestCell(tx,tz);if(!s||!t)return null;const N=W*H,start=s.j*W+s.i,goal=t.j*W+t.i;if(start===goal)return[];const g=new Float32Array(N);g.fill(Infinity);const from=new Int32Array(N);from.fill(-1);const closed=new Uint8Array(N),heap=[],h=id=>Math.hypot(id%W-t.i,Math.floor(id/W)-t.j);
+  const push=node=>{heap.push(node);let i=heap.length-1;while(i>0){const p=(i-1)>>1;if(heap[p].f<=node.f)break;heap[i]=heap[p];i=p;}heap[i]=node;};
+  const pop=()=>{if(!heap.length)return null;const top=heap[0],last=heap.pop();if(heap.length){let i=0;while(true){let c=i*2+1;if(c>=heap.length)break;if(c+1<heap.length&&heap[c+1].f<heap[c].f)c++;if(heap[c].f>=last.f)break;heap[i]=heap[c];i=c;}heap[i]=last;}return top;};
+  g[start]=0;push({id:start,f:h(start)});const dirs=[[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.414],[1,-1,1.414],[-1,1,1.414],[-1,-1,1.414]];let found=false,loops=0;
+  while(heap.length&&loops<N*2){loops++;const e=pop();if(!e)break;const cur=e.id;if(closed[cur])continue;if(cur===goal){found=true;break;}closed[cur]=1;const x=cur%W,z=Math.floor(cur/W);for(const[dx,dz,cost]of dirs){const nx=x+dx,nz=z+dz;if(nx<0||nz<0||nx>=W||nz>=H)continue;const next=nz*W+nx;if(grid[next]||closed[next])continue;if(dx&&dz&&(grid[z*W+nx]||grid[nz*W+x]))continue;const score=g[cur]+cost;if(score>=g[next])continue;from[next]=cur;g[next]=score;push({id:next,f:score+h(next)});}}
+  if(!found)return null;const raw=[];for(let id=goal;id!==-1;id=from[id])raw.push(center(id%W,Math.floor(id/W)));raw.reverse();const smooth=[raw[0]];let a=0;while(a<raw.length-1){let b=raw.length-1;while(b>a+1&&!clear(raw[a],raw[b]))b--;smooth.push(raw[b]);a=b;}return smooth.slice(1);
+ };return{free,nearest:(x,z)=>{const p=nearestCell(x,z);return p?center(p.i,p.j):{x,z};},path};
+}
+const nav=createNav(BLOCKS,WALLS),stations=[];
+const st=(tag,spot,approach,o={})=>stations.push({tag,spot,approach:approach||spot,face:0,kind:'stand',seatY:0,pose:'stand',dwell:[5,9],occ:null,...o});
+DESKS.forEach(([x,z],i)=>st('desk',[x,z+1.12],[x,z+1.95],{home:i,kind:'sit',seatY:0.76,face:Math.PI,pose:'type',dwell:[18,34]}));
+st('boss',[-1.65,3.85],[-1.65,4.9],{kind:'sit',seatY:0.76,face:Math.PI,pose:'type',dwell:[20,35]});
+MEET_CHAIRS.forEach(c=>st('meet',[c.x,c.z],[c.x+c.out[0]*0.95,c.z+c.out[1]*0.95],{kind:'sit',seatY:0.65,face:c.face,pose:'chat',dwell:[10,18]}));
+[5,6.8].forEach(x=>st('sofa',[x,-1],[x,0.03],{kind:'sit',seatY:0.8,pose:'rest',dwell:[8,14]}));
+NOOK_POUFS.forEach(p=>st('pouf',[p.x,p.z],[p.x+p.out[0]*0.9,p.z+p.out[1]*0.9],{kind:'sit',seatY:0.5,face:p.face,pose:'read',dwell:[8,14]}));
+DINE_CHAIRS.forEach(c=>st('dine',[c.x,c.z],[c.x+(c.face>0?-0.8:0.9),c.z],{kind:'sit',seatY:0.55,face:c.face,pose:'eat',dwell:[9,14]}));
+st('bean',[4.15,4.2],[4.15,5.3],{kind:'sit',seatY:0.6,face:1.39,pose:'play',dwell:[9,14]});st('bean',[7.9,4.2],[7.9,5.3],{kind:'sit',seatY:0.6,face:-1.35,pose:'play',dwell:[9,14]});
+st('arcade',[5.05,3.45],null,{face:Math.PI,pose:'play',dwell:[7,12]});st('arcade',[6.75,3.45],null,{face:Math.PI,pose:'play',dwell:[7,12]});
+st('coffee',[-6.35,3.5],null,{face:Math.PI,pose:'drink',dwell:[4,6]});st('coffee',[-5.35,3.5],null,{face:Math.PI,pose:'drink',dwell:[3,5]});
+st('book',[-7.8,-1.6],null,{face:-Math.PI/2,pose:'read',dwell:[6,10]});st('board',[6.7,-6.6],null,{face:Math.PI,pose:'board',dwell:[5,8]});st('sink',[-11.7,6.7],null,{face:-Math.PI/2,pose:'wash',dwell:[4,6]});st('pool',[POOL.x,POOL.z],[10.4,3.35],{kind:'swim',dwell:[14,22]});
+const damp=(a,b,k)=>a+(b-a)*k,angleTo=(a,b)=>Math.atan2(Math.sin(b-a),Math.cos(b-a)),rand=(a,b)=>a+Math.random()*(b-a);
+const POSES={stand:(t,s)=>[0,s*0.06],type:(t,s)=>[-1.05+Math.sin(t*9+s*2)*0.05,s*0.12],chat:(t,s)=>[-0.5+Math.sin(t*2.1+s*1.7)*(s>0?0.35:0.14),s*0.25],eat:(t,s)=>s>0?[-1.1-Math.max(0,Math.sin(t*1.6))*0.7,-0.1]:[-0.5,0.15],rest:(t,s)=>[-0.35,s*0.15],play:(t,s)=>[-0.95+Math.sin(t*7+s)*0.08,s*0.1],drink:(t,s)=>s>0?[-1.45-Math.max(0,Math.sin(t*1.2))*0.4,-0.15]:[-0.1,0.05],read:(t,s)=>[-1,s*0.18],board:(t,s)=>s>0?[-2.5+Math.sin(t*3)*0.15,-0.1]:[-0.2,0.08],wash:(t,s)=>[-0.85+Math.sin(t*8+s)*0.1,-s*0.1]};
+const TILT={type:0.14,read:0.2,eat:0.1,wash:0.2},WEIGHT={meet:1.2,sofa:1.2,pouf:1,dine:1.3,bean:0.8,arcade:0.7,coffee:1,book:0.5,board:0.5,sink:0.6,pool:1};
+const swimYaw=a=>Math.atan2(-Math.sin(a.theta)*a.dir,Math.cos(a.theta)*a.dir),swimPos=(a,th)=>{const yaw=swimYaw(a),cx=POOL.x+Math.cos(th)*0.45,cz=POOL.z+Math.sin(th)*0.45;return{x:cx-Math.sin(yaw)*0.7,z:cz-Math.cos(yaw)*0.7};};
+function makeActor(root,rig,o){root.rotation.order='YXZ';return{root,legs:rig.legs,arms:rig.arms,head:rig.head,headTilt:rig.headTilt!==false,home:o.home??null,boss:!!o.boss,speed:o.speed,phase:o.phase,state:'dwell',wait:rand(3,12),st:null,path:[],pi:0,apt:null,v:0,walk:0,sit:0,sitT:0,prone:0,proneT:0,u:0,from:null,yaw:0,seatY:0,arc:0,theta:0,dir:1};}
+function seatAt(a,s){if(!s)return;s.occ=a;a.st=s;a.apt=nav.nearest(s.approach[0],s.approach[1]);a.root.position.set(s.spot[0],GROUND,s.spot[1]);a.yaw=s.face;a.seatY=s.seatY;a.sit=a.sitT=s.kind==='sit'?1:0;a.prone=a.proneT=s.kind==='swim'?1:0;a.state='dwell';a.wait=rand(4,14);a.root.rotation.y=a.yaw;}
+function pickStation(a){const opts=stations.filter(s=>(!s.occ||s.occ===a)&&s!==a.st&&(s.tag==='desk'?s.home===a.home:s.tag==='boss'?a.boss:true));const w=opts.map(s=>(s.tag==='desk'||s.tag==='boss'?4:WEIGHT[s.tag]??1));if(!opts.length)return null;let r=Math.random()*w.reduce((x,y)=>x+y,0);for(let i=0;i<opts.length;i++){r-=w[i];if(r<=0)return opts[i];}return opts[0];}
+function plan(a){if(a.st)a.st.occ=null;for(let n=0;n<6;n++){const s=pickStation(a);if(!s)break;const p=nav.path(a.root.position.x,a.root.position.z,s.approach[0],s.approach[1]);if(!p||!p.length)continue;s.occ=a;a.st=s;a.path=p;a.pi=0;a.apt=p[p.length-1];a.state='walk';return;}a.state='dwell';a.wait=2;}
+function walkStep(a,dt){const p=a.root.position,t=a.path[a.pi];if(!t)return true;const dx=t.x-p.x,dz=t.z-p.z,d=Math.hypot(dx,dz),last=a.pi===a.path.length-1;if(d<(last?0.06:0.18)){a.pi++;return a.pi>=a.path.length;}const want=a.speed*(last?Math.min(1,0.35+d/0.9):1);a.v=damp(a.v,want,1-Math.exp(-dt*6));const step=Math.min(a.v*dt,d);p.x+=dx/d*step;p.z+=dz/d*step;a.yaw+=angleTo(a.yaw,Math.atan2(dx,dz))*(1-Math.exp(-dt*9));a.walk+=a.v*dt*5.2;return false;}
+function updateActor(a,dt,time){const p=a.root.position,s=a.st,k=1-Math.exp(-dt*8);if(a.state==='walk'){if(walkStep(a,dt)){a.state='in';a.u=0;a.from={x:p.x,z:p.z};a.seatY=s.seatY;a.sitT=s.kind==='sit'?1:0;a.proneT=s.kind==='swim'?1:0;if(s.kind==='swim'){a.theta=Math.atan2(s.approach[1]-POOL.z,s.approach[0]-POOL.x);a.dir=Math.random()<0.5?1:-1;}}}else{a.v=damp(a.v,0,k);if(a.state==='in'){a.u=Math.min(1,a.u+dt/0.8);const e=a.u*a.u*(3-2*a.u),swim=s.kind==='swim',to=swim?swimPos(a,a.theta):{x:s.spot[0],z:s.spot[1]};p.x=a.from.x+(to.x-a.from.x)*e;p.z=a.from.z+(to.z-a.from.z)*e;a.arc=Math.sin(Math.PI*e)*(swim?0.28:0.04);a.yaw+=angleTo(a.yaw,swim?swimYaw(a):s.face)*k;if(a.u>=1){a.state='dwell';a.arc=0;a.wait=rand(s.dwell[0],s.dwell[1]);}}else if(a.state==='dwell'){a.wait-=dt;if(s&&s.kind==='swim'){a.theta+=a.dir*0.9*dt;const q=swimPos(a,a.theta);p.x=q.x;p.z=q.z;a.yaw+=angleTo(a.yaw,swimYaw(a))*k;}else if(s)a.yaw+=angleTo(a.yaw,s.face)*(1-Math.exp(-dt*7));if(a.wait<=0){a.state='out';a.u=0;a.from={x:p.x,z:p.z};a.sitT=0;a.proneT=0;}}else if(a.state==='out'){a.u=Math.min(1,a.u+dt/0.7);const e=a.u*a.u*(3-2*a.u);p.x=a.from.x+(a.apt.x-a.from.x)*e;p.z=a.from.z+(a.apt.z-a.from.z)*e;a.arc=Math.sin(Math.PI*e)*(s.kind==='swim'?0.28:0.04);a.yaw+=angleTo(a.yaw,Math.atan2(a.apt.x-a.from.x,a.apt.z-a.from.z))*k;if(a.u>=1){a.arc=0;plan(a);}}}applyPose(a,dt,time);}
+function applyPose(a,dt,time){const k=1-Math.exp(-dt*10),kk=1-Math.exp(-dt*6),r=a.root,s=a.st,moving=Math.min(1,a.v/a.speed)||0;a.sit=damp(a.sit,a.sitT,kk);a.prone=damp(a.prone,a.proneT,kk);const pose=(a.state==='dwell'||a.state==='in')&&s?POSES[s.pose]||POSES.stand:POSES.stand,swing=Math.sin(a.walk)*0.6*moving;a.legs.forEach((leg,i)=>{const kick=Math.sin(time*7+i*Math.PI)*0.3*a.prone;leg.rotation.x=damp(leg.rotation.x,(i?-swing:swing)*(1-a.sit)-1.3*a.sit+kick,k);});a.arms.forEach((arm,i)=>{const side=i?1:-1;let x,z;if(a.prone>0.5){x=-1.5+Math.sin(time*4.2+i*Math.PI)*1.3;z=side*0.1;}else{const q=pose(time+a.phase,side),wx=(i?swing:-swing)*0.85;x=q[0]*(1-moving)+wx*moving;z=q[1]*(1-moving)+side*0.05*moving;}arm.rotation.x=damp(arm.rotation.x,x,k);arm.rotation.z=damp(arm.rotation.z,z,k);});a.head.rotation.y=Math.sin(time*0.55+a.phase)*0.12*(1-moving)*(1-a.prone);if(a.headTilt)a.head.rotation.x=damp(a.head.rotation.x,((s&&TILT[s.pose])||0)*(a.state==='dwell'?1:0)*(1-a.prone)-1.1*a.prone,k);const bob=Math.abs(Math.sin(a.walk))*0.035*moving+(moving<0.1?Math.sin(time*1.4+a.phase)*0.008:0);r.position.y=GROUND+a.sit*(a.seatY-0.5-GROUND)+a.prone*(0.36-GROUND)+bob+a.arc;r.rotation.y=a.yaw;r.rotation.x=a.prone*1.45+moving*0.05;r.rotation.z=Math.sin(a.walk)*0.025*moving;}
+function separate(list,dt){for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){const A=list[i],B=list[j],pa=A.root.position,pb=B.root.position;if(A.state!=='walk'&&B.state!=='walk')continue;const dx=pb.x-pa.x,dz=pb.z-pa.z,d=Math.hypot(dx,dz);if(d>0.6||d<0.001)continue;const push=(0.6-d)*Math.min(1,dt*6)*(A.state==='walk'&&B.state==='walk'?0.5:1),ux=dx/d,uz=dz/d;if(A.state==='walk'&&nav.free(pa.x-ux*push,pa.z-uz*push)){pa.x-=ux*push;pa.z-=uz*push;}if(B.state==='walk'&&nav.free(pb.x+ux*push,pb.z+uz*push)){pb.x+=ux*push;pb.z+=uz*push;}}}
+
 export function createOffice(host, { onSelect } = {}) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#d8d9cc');
@@ -148,9 +218,7 @@ export function createOffice(host, { onSelect } = {}) {
     cylinder(p, 'stem', 0.035 * size, 0.05 * size, 0.7 * size, [0, 0.72 * size, 0], mats.leaf);
   };
   addPlant(-11.9, -6.45, 1.15);
-  addPlant(-11.8, 6.35, 1.18);
   addPlant(11.75, -6.35, 1.05);
-  addPlant(11.75, 6.25, 1.12);
 
   // Work desks, computers, task lights and comfy chairs.
   const makeDesk = (x, z, accent, label) => {
@@ -171,15 +239,12 @@ export function createOffice(host, { onSelect } = {}) {
     for (const sx of [-0.25, 0.25]) box(chair, 'chair foot', [0.1, 0.08, 0.54], [sx, 0.06, 0], mats.metal);
     return d;
   };
-  makeDesk(-6.7, -2.45, '#e8ae77', 'Creative');
-  makeDesk(-3.5, -2.45, '#8fc3b5', 'Developer');
-  makeDesk(-0.25, -2.45, '#b8a5dd', 'Designer');
-  makeDesk(-6.7, -5.9, '#d9a0ac', 'QA pod');
-  makeDesk(-3.5, -5.9, '#91a4d1', 'Product pod');
-  makeDesk(-0.25, -5.9, '#c4a77b', 'Release pod');
-  makeDesk(3.0, -5.9, '#e6b172', 'Research pod');
-  makeDesk(6.05, -5.9, '#83a8d3', 'Design pod');
-  makeDesk(9.1, -5.9, '#80b6a4', 'Operations pod');
+  makeDesk(-6.7, -3.35, '#e8ae77', 'Creative');
+  makeDesk(-3.5, -3.35, '#8fc3b5', 'Developer');
+  makeDesk(-0.25, -3.35, '#b8a5dd', 'Designer');
+  makeDesk(3.0, -4.65, '#e6b172', 'Research pod');
+  makeDesk(6.05, -4.65, '#83a8d3', 'Design pod');
+  makeDesk(9.1, -4.65, '#80b6a4', 'Operations pod');
 
   // New west wing: enclosed focus studio / library with its own furniture.
   // A broad doorway stays open on the east side so both coworkers and boss can enter.
@@ -237,31 +302,22 @@ export function createOffice(host, { onSelect } = {}) {
   }
   box(scene, 'sprint marker rail', [2.5, 0.055, 0.05], [6.7, 1.63, -7.85], mats.metal);
 
-  // Extra team wing: conference table, rolling chairs, and a place to brainstorm.
-  const warRoom = group(scene, 'war room', [11.0, 0, 3.15]);
-  box(warRoom, 'war room rug', [3.6, 0.055, 3.5], [0, 0.11, 0], material('#c9d3bd'));
-  // Keep the conference set compact and aligned to the room rug—no chairs
-  // spilling into the dining entrance or the central walkway.
-  cylinder(warRoom, 'conference table top', 1.08, 1.08, 0.16, [0, 0.96, 0], mats.woodLight, 32);
+  const warRoom = group(scene, 'war room', [MEET.x, 0, MEET.z]);
+  box(warRoom, 'war room rug', [4.8, 0.055, 4.0], [0, 0.11, 0], material('#c9d3bd'));
+  cylinder(warRoom, 'conference table top', 1.0, 1.0, 0.16, [0, 0.96, 0], mats.woodLight, 32);
   cylinder(warRoom, 'conference table foot', 0.24, 0.33, 0.84, [0, 0.49, 0], mats.darkWood, 16);
-  for (let i = 0; i < 5; i++) {
-    const a = i * Math.PI * 2 / 5;
-    const chair = group(warRoom, 'meeting chair', [Math.cos(a) * 1.22, 0, Math.sin(a) * 1.12]);
-    box(chair, 'chair seat', [0.52, 0.15, 0.5], [0, 0.57, 0], [mats.sofa, mats.terracotta, mats.navy, mats.leaf, mats.fabric][i]);
-    box(chair, 'chair back', [0.52, 0.68, 0.12], [0, 0.93, -0.18], [mats.sofa, mats.terracotta, mats.navy, mats.leaf, mats.fabric][i]);
-    cylinder(chair, 'chair stem', 0.06, 0.06, 0.48, [0, 0.27, 0], mats.metal, 8);
-    box(chair, 'chair base', [0.44, 0.06, 0.42], [0, 0.06, 0], mats.metal);
-  }
-  box(warRoom, 'team screen frame', [1.55, 1.04, 0.12], [0, 1.75, -1.32], mats.navy);
-  box(warRoom, 'team screen', [1.35, 0.82, 0.035], [0, 1.77, -1.24], material('#9ed1c0', 0.25, { emissive: '#5b9f8e', emissiveIntensity: 0.38 }));
-  addPlant(12.05, 5.75, 0.65);
+  const meetColors = [mats.sofa, mats.terracotta, mats.navy, mats.leaf];
+  MEET_CHAIRS.forEach((c,i)=>{const chair=group(scene,'meeting chair',[c.x,0,c.z]);chair.rotation.y=c.face;box(chair,'chair seat',[0.64,0.15,0.62],[0,0.57,0],meetColors[i]);box(chair,'chair back',[0.64,0.72,0.14],[0,0.97,-0.24],meetColors[i]);cylinder(chair,'chair stem',0.06,0.06,0.48,[0,0.27,0],mats.metal,8);box(chair,'chair base',[0.54,0.06,0.5],[0,0.06,0],mats.metal);});
+  box(warRoom,'screen stand',[0.12,1.3,0.12],[0,1.05,-1.82],mats.metal);box(warRoom,'team screen frame',[2,1.25,0.12],[0,1.8,-1.82],mats.navy);box(warRoom,'team screen',[1.78,1.02,0.035],[0,1.82,-1.74],material('#9ed1c0',0.25,{emissive:'#5b9f8e',emissiveIntensity:0.38}));
+  const meeting=group(scene,'reading corner',[NOOK.x,0,NOOK.z]);cylinder(meeting,'round tabletop',0.75,0.75,0.16,[0,0.95,0],mats.woodLight,24);cylinder(meeting,'table leg',0.13,0.25,0.88,[0,0.47,0],mats.wood);
+  NOOK_POUFS.forEach((p,i)=>cylinder(scene,'pouf',0.42,0.43,0.48,[p.x,0.25,p.z],[mats.terracotta,mats.sofa,mats.fabric][i],12));cylinder(meeting,'plant pot',0.22,0.28,0.28,[0.2,1.17,-0.05],mats.terracotta);sphere(meeting,'small plant',0.26,[0.2,1.48,-0.05],mats.leafLight,[1,1.35,1]);
 
   // The old loose pouf/table cluster was removed from the circulation spine.
   // The lounge and conference room are the dedicated social zones now.
 
   // Cozy lounge: sofa, cushions, coffee table, rug, books and standing lamp.
-  const lounge = group(scene, 'lounge', [5.9, 0, -2.0]);
-  box(lounge, 'rug', [5.3, 0.055, 3.4], [0, 0.12, 0], material('#d8bfa3'));
+  const lounge = group(scene, 'lounge', [5.9, 0, -1.0]);
+  box(lounge, 'rug', [5.3, 0.055, 4.2], [0, 0.12, 0.4], material('#d8bfa3'));
   box(lounge, 'sofa base', [3.5, 0.55, 1.16], [0, 0.5, -0.45], mats.sofa);
   box(lounge, 'sofa back', [3.5, 1.05, 0.28], [0, 0.98, -0.95], mats.sofa);
   box(lounge, 'sofa arm', [0.3, 0.75, 1.15], [-1.58, 0.66, -0.42], mats.sofa);
@@ -269,10 +325,10 @@ export function createOffice(host, { onSelect } = {}) {
   box(lounge, 'cushion', [0.82, 0.16, 0.6], [-0.88, 0.83, -0.44], mats.fabric);
   box(lounge, 'cushion', [0.82, 0.16, 0.6], [0.05, 0.83, -0.44], mats.terracotta);
   box(lounge, 'cushion', [0.82, 0.16, 0.6], [0.92, 0.83, -0.44], mats.cream);
-  box(lounge, 'coffee table', [2, 0.16, 0.94], [0, 0.55, 0.95], mats.woodLight);
-  for (const x of [-0.78, 0.78]) for (const z of [0.64, 1.26]) box(lounge, 'coffee table leg', [0.08, 0.44, 0.08], [x, 0.3, z], mats.darkWood);
-  box(lounge, 'book one', [0.6, 0.07, 0.38], [-0.43, 0.67, 0.94], material('#d68d65'));
-  box(lounge, 'book two', [0.55, 0.07, 0.35], [-0.39, 0.75, 0.92], material('#7e9a81'));
+  box(lounge, 'coffee table', [2, 0.16, 0.94], [0, 0.55, 1.7], mats.woodLight);
+  for (const x of [-0.78, 0.78]) for (const z of [1.39, 2.01]) box(lounge, 'coffee table leg', [0.08, 0.44, 0.08], [x, 0.3, z], mats.darkWood);
+  box(lounge, 'book one', [0.6, 0.07, 0.38], [-0.43, 0.67, 1.69], material('#d68d65'));
+  box(lounge, 'book two', [0.55, 0.07, 0.35], [-0.39, 0.75, 1.67], material('#7e9a81'));
   const lamp = group(lounge, 'floor lamp', [2.1, 0, -0.5]);
   cylinder(lamp, 'lamp base', 0.3, 0.3, 0.1, [0, 0.18, 0], mats.metal);
   cylinder(lamp, 'lamp pole', 0.045, 0.045, 2.1, [0, 1.23, 0], mats.metal);
@@ -294,7 +350,7 @@ export function createOffice(host, { onSelect } = {}) {
   for (let i = 0; i < 2; i++) {
     // Keep the beanbags in the two back corners so the middle walking lane
     // stays open between the arcade cabinets and the console.
-    sphere(game, 'bean bag', 0.48, [i ? 1.85 : -1.85, 0.36, 1.05], i ? mats.terracotta : mats.sofa, [1.0, 0.68, 1.0]);
+    sphere(game, 'bean bag', 0.48, [i ? 1.7 : -2.05, 0.38, 0.7], i ? mats.terracotta : mats.sofa, [1.0, 0.68, 1.0]);
   }
 
   // Pantry with fridge, counter, coffee machine and tiny galon.
@@ -311,100 +367,17 @@ export function createOffice(host, { onSelect } = {}) {
   cylinder(pantry, 'galon stand', 0.26, 0.26, 0.55, [1.25, 0.62, -0.2], mats.white, 12);
   box(pantry, 'galon tap', [0.16, 0.08, 0.17], [1.25, 0.79, 0.07], mats.navy);
 
-  // Bathroom suite with a real doorway, glass shower, vanity and toilet.
-  const bathroom = group(scene, 'bathroom suite', [-10.5, 0, 5.0]);
-  box(bathroom, 'bathroom tile floor', [4.0, 0.08, 4.1], [0, 0.04, 0], mats.bathTile);
-  box(bathroom, 'bathroom back wall', [4.2, 2.5, 0.16], [0, 1.25, -2.0], mats.wall);
-  box(bathroom, 'bathroom left wall', [0.16, 2.5, 4.1], [-2.02, 1.25, 0], mats.wall);
-  box(bathroom, 'bathroom right wall', [0.16, 2.5, 4.1], [2.02, 1.25, 0], mats.wall);
-  box(bathroom, 'bathroom entry left', [1.15, 2.5, 0.16], [-1.43, 1.25, 1.98], mats.wall);
-  box(bathroom, 'bathroom entry right', [1.15, 2.5, 0.16], [1.43, 1.25, 1.98], mats.wall);
-  // Compact shower cubicle; see-through glass keeps the miniature readable.
-  box(bathroom, 'shower tray', [1.35, 0.12, 1.28], [-1.2, 0.14, -1.18], material('#c5d8d1'));
-  box(bathroom, 'shower rear glass', [1.35, 1.9, 0.045], [-1.2, 1.1, -1.82], mats.glass);
-  box(bathroom, 'shower side glass', [0.045, 1.9, 1.3], [-1.86, 1.1, -1.18], mats.glass);
-  cylinder(bathroom, 'shower head', 0.09, 0.11, 0.09, [-1.68, 2.05, -1.74], mats.metal, 12);
-  cylinder(bathroom, 'shower rail', 0.025, 0.025, 1.2, [-1.7, 1.52, -1.73], mats.metal, 8);
-  // Toilet and cistern.
-  box(bathroom, 'toilet cistern', [0.52, 0.7, 0.28], [0.95, 0.47, -1.37], mats.white);
-  sphere(bathroom, 'toilet bowl', 0.36, [0.95, 0.3, -0.83], mats.white, [0.88, 0.8, 1.05]);
-  cylinder(bathroom, 'toilet seat', 0.28, 0.32, 0.055, [0.95, 0.49, -0.83], mats.metal, 20);
-  // Vanity with a basin and mirror.
-  box(bathroom, 'bathroom vanity', [1.15, 0.72, 0.58], [0.85, 0.48, 0.62], mats.woodLight);
-  box(bathroom, 'bathroom vanity top', [1.27, 0.12, 0.68], [0.85, 0.88, 0.62], mats.white);
-  sphere(bathroom, 'bathroom basin', 0.25, [0.85, 0.96, 0.62], material('#c8d8d2'), [1.35, 0.35, 1]);
-  box(bathroom, 'bathroom mirror frame', [0.92, 1.08, 0.1], [0.85, 1.6, -1.88], mats.wood);
-  box(bathroom, 'bathroom mirror', [0.78, 0.9, 0.035], [0.85, 1.61, -1.815], mats.glass);
-  cylinder(bathroom, 'vanity tap', 0.035, 0.035, 0.22, [0.85, 1.08, 0.38], mats.metal, 8);
-  box(scene, 'bathroom sign', [1.15, 0.34, 0.07], [-9.0, 2.08, 6.93], mats.navy);
-  box(scene, 'bathroom sign inlay', [0.6, 0.035, 0.035], [-9.0, 2.08, 6.88], mats.lamp);
-
-  // Partitioned dining room: dining table, chairs, plates, fruit and a serving counter.
-  const dining = group(scene, 'dining room', [4.7, 0, 6.08]);
-  box(dining, 'dining zone rug', [6.6, 0.06, 3.15], [0, 0.09, 0], material('#d8cbb3'));
-  // Wider glass-and-wood walls leave proper walking clearance around the table.
-  box(dining, 'dining side left lower', [0.16, 1.45, 2.65], [-3.45, 0.75, 0.12], mats.wood);
-  box(dining, 'dining side left glass', [0.055, 0.82, 2.65], [-3.45, 1.86, 0.12], mats.glass);
-  box(dining, 'dining side right lower', [0.16, 1.45, 2.65], [3.45, 0.75, 0.12], mats.wood);
-  box(dining, 'dining side right glass', [0.055, 0.82, 2.65], [3.45, 1.86, 0.12], mats.glass);
-  box(dining, 'dining rear left lower', [1.4, 1.45, 0.16], [-1.4, 0.75, -1.42], mats.wood);
-  box(dining, 'dining rear left glass', [1.4, 0.82, 0.055], [-1.4, 1.86, -1.42], mats.glass);
-  box(dining, 'dining rear right lower', [1.4, 1.45, 0.16], [1.4, 0.75, -1.42], mats.wood);
-  box(dining, 'dining rear right glass', [1.4, 0.82, 0.055], [1.4, 1.86, -1.42], mats.glass);
-  box(dining, 'dining tabletop', [2.15, 0.16, 1.15], [0, 0.93, 0.05], mats.woodLight);
-  for (const x of [-0.88, 0.88]) for (const z of [-0.37, 0.42]) box(dining, 'dining table leg', [0.12, 0.84, 0.12], [x, 0.43, z], mats.darkWood);
-  const diningChairs = [
-    [-1.53, 0.08, 0], [1.53, 0.08, 0], [-0.8, 0.08, -1.0], [0.8, 0.08, -1.0],
-    [-0.8, 0.08, 1.08], [0.8, 0.08, 1.08]
-  ];
-  diningChairs.forEach(([x, y, z], i) => {
-    const seat = group(dining, 'dining chair', [x, y, z]);
-    const fabric = [mats.sofa, mats.terracotta, mats.navy, mats.leaf, mats.fabric, mats.wood][i];
-    box(seat, 'dining chair seat', [0.58, 0.13, 0.55], [0, 0.48, 0], fabric);
-    box(seat, 'dining chair back', [0.58, 0.68, 0.13], [0, 0.84, -0.22], fabric);
-    for (const lx of [-0.22, 0.22]) for (const lz of [-0.2, 0.2]) box(seat, 'dining chair leg', [0.055, 0.43, 0.055], [lx, 0.22, lz], mats.metal);
-  });
-  cylinder(dining, 'dinner plate one', 0.23, 0.24, 0.025, [-0.55, 1.03, 0.05], mats.white, 20);
-  cylinder(dining, 'dinner plate two', 0.23, 0.24, 0.025, [0.55, 1.03, 0.05], mats.white, 20);
-  cylinder(dining, 'fruit bowl', 0.22, 0.29, 0.13, [0, 1.07, -0.24], mats.terracotta, 16);
-  for (let i = 0; i < 4; i++) sphere(dining, 'fruit', 0.08, [-0.12 + (i % 2) * 0.13, 1.18, -0.29 + Math.floor(i / 2) * 0.1], [mats.terracotta, mats.lamp, mats.leaf, mats.cream][i]);
-  box(dining, 'serving sideboard', [1.1, 0.8, 0.54], [1.65, 0.45, -0.85], mats.wood);
-  box(dining, 'serving counter top', [1.18, 0.1, 0.6], [1.65, 0.9, -0.85], mats.cream);
-  addPlant(1.85, 6.25, 0.65);
-
-  // Outdoor pool deck next to the HQ entrance.
-  const poolDeck = group(scene, 'pool deck', [17.0, 0, 15.5]);
-  box(poolDeck, 'pool patio', [8.1, 0.16, 6.0], [0, -0.04, 0], material('#d8c8ab'));
-  box(poolDeck, 'pool basin', [5.15, 0.42, 3.35], [0, 0.17, -0.1], material('#668f96'));
-  box(poolDeck, 'pool water', [4.73, 0.055, 2.92], [0, 0.4, -0.1], mats.poolWater);
-  // Pale coping pieces make the water edge legible in the dollhouse view.
-  box(poolDeck, 'pool coping front', [5.32, 0.12, 0.18], [0, 0.45, 1.57], mats.cream);
-  box(poolDeck, 'pool coping back', [5.32, 0.12, 0.18], [0, 0.45, -1.76], mats.cream);
-  box(poolDeck, 'pool coping left', [0.18, 0.12, 3.3], [-2.57, 0.45, -0.1], mats.cream);
-  box(poolDeck, 'pool coping right', [0.18, 0.12, 3.3], [2.57, 0.45, -0.1], mats.cream);
-  const poolRipples = [];
-  for (let i = 0; i < 4; i++) {
-    const ripple = new THREE.Mesh(new THREE.TorusGeometry(0.18 + i * 0.07, 0.012, 4, 24), material('#b9e5df', 0.25, { transparent: true, opacity: 0.65 }));
-    ripple.rotation.x = -Math.PI / 2;
-    ripple.position.set(-0.85 + i * 0.55, 0.45, -0.3 + (i % 2) * 0.55);
-    ripple.name = 'pool ripple';
-    poolDeck.add(ripple);
-    poolRipples.push({ ripple, phase: i * 1.45 });
-  }
-  // Ladder at the corner.
-  for (let i = 0; i < 2; i++) cylinder(poolDeck, 'pool ladder rail', 0.035, 0.035, 0.95, [2.18 + i * 0.3, 0.73, 1.12], mats.metal, 8);
-  for (let i = 0; i < 3; i++) cylinder(poolDeck, 'pool ladder step', 0.03, 0.03, 0.3, [2.18 + i * 0.15, 0.42 + i * 0.18, 1.12], mats.metal, 8);
-  // Sunbeds and parasol on the dry side, away from the water.
-  for (const x of [-3.35, 3.35]) {
-    const bed = group(poolDeck, 'sun lounger', [x, 0, 0.95]);
-    box(bed, 'lounger cushion', [1.35, 0.13, 0.55], [0, 0.34, 0], mats.fabric);
-    box(bed, 'lounger back', [0.65, 0.1, 0.5], [0, 0.56, -0.2], mats.sofa, { rotation: [-0.18, 0, 0] });
-    for (const lx of [-0.48, 0.48]) box(bed, 'lounger feet', [0.08, 0.28, 0.08], [lx, 0.18, 0], mats.metal);
-  }
-  cylinder(poolDeck, 'parasol pole', 0.035, 0.035, 2.1, [-3.55, 1.05, -1.45], mats.metal, 8);
-  const parasol = cylinder(poolDeck, 'parasol canopy', 0.25, 1.25, 0.38, [-3.55, 2.0, -1.45], material('#dca979'), 16);
-  parasol.scale.z = 1.1;
-  addPlant(15.0, 10.8, 0.8);
+  box(scene,'bathroom tile',[3,0.03,3.3],[-11.4,0.105,5.95],material('#dfe9e6',0.5));
+  const bath=group(scene,'bathroom',[0,0,0]);box(bath,'toilet tank',[0.5,0.55,0.18],[-12.2,0.4,4.55],mats.white);cylinder(bath,'toilet bowl',0.24,0.2,0.4,[-12.2,0.3,4.95],mats.white,14);cylinder(bath,'toilet seat',0.28,0.32,0.055,[-12.2,0.49,4.95],mats.metal,20);
+  box(bath,'shower tray',[1.4,0.05,1],[-10.7,0.12,4.85],mats.cream);box(bath,'shower glass',[1.4,1.9,0.04],[-10.7,1,5.33],mats.glass,{castShadow:false});cylinder(bath,'shower pipe',0.03,0.03,1.9,[-11.3,1.05,4.45],mats.metal,6);cylinder(bath,'shower head',0.15,0.15,0.04,[-11.3,2,4.65],mats.metal,12);
+  box(bath,'sink counter',[0.55,0.85,1.2],[-12.55,0.52,6.7],mats.woodLight);box(bath,'sink basin',[0.4,0.06,0.5],[-12.5,0.97,6.7],mats.white);cylinder(bath,'faucet',0.02,0.02,0.2,[-12.4,1.08,6.7],mats.metal,6);box(bath,'mirror',[0.04,0.9,0.8],[-12.95,1.7,6.7],material('#cfe3e6',0.1,{metalness:0.3}));
+  box(scene,'dining rug',[4.4,0.03,3.1],[-7.2,0.105,6],material('#d6c4a6'));const dining=group(scene,'dining',[DINE.x,0,DINE.z]);box(dining,'dining top',[0.9,0.08,2.2],[0,0.8,0],mats.woodLight);
+  for(const sx of [-0.38,0.38])for(const sz of [-0.98,0.98])box(dining,'dining leg',[0.07,0.76,0.07],[sx,0.4,sz],mats.darkWood);for(const z of [-0.6,0,0.6])cylinder(dining,'plate',0.14,0.14,0.02,[0,0.85,z],mats.cream,14);cylinder(dining,'vase',0.07,0.09,0.22,[0,0.95,0.2],mats.terracotta,10);
+  DINE_CHAIRS.forEach(c=>{const chair=group(scene,'dining chair',[c.x,0,c.z]);chair.rotation.y=c.face;box(chair,'seat',[0.5,0.08,0.5],[0,0.5,0],mats.fabric);box(chair,'back',[0.5,0.55,0.07],[0,0.8,-0.22],mats.fabric);for(const sx of [-0.2,0.2])for(const sz of [-0.2,0.2])box(chair,'leg',[0.05,0.46,0.05],[sx,0.23,sz],mats.darkWood);});
+  const poolRipples=[];box(scene,'pool deck',[4.15,0.03,4],[10.93,0.105,5.58],material('#d3dccf',0.7));const pool=group(scene,'pool',[POOL.x,0,POOL.z]);const rimY=GROUND+0.225,hw=POOL.iw/2+0.1,hd=POOL.id/2+0.1;
+  box(pool,'pool rim north',[POOL.iw+0.4,0.45,0.2],[0,rimY,-hd],mats.cream);box(pool,'pool rim south',[POOL.iw+0.4,0.45,0.2],[0,rimY,hd],mats.cream);box(pool,'pool rim west',[0.2,0.45,POOL.id],[-hw,rimY,0],mats.cream);box(pool,'pool rim east',[0.2,0.45,POOL.id],[hw,rimY,0],mats.cream);box(pool,'pool floor',[POOL.iw,0.02,POOL.id],[0,0.1,0],material('#8fd0d8'),{castShadow:false});box(pool,'pool water',[POOL.iw,0.3,POOL.id],[0,0.24,0],waterMat,{castShadow:false});
+  for(const x of [-0.25,0.25])cylinder(pool,'pool ladder rail',0.02,0.02,0.75,[x,0.6,-hd],mats.metal,6);
+  for(let i=0;i<4;i++){const ripple=new THREE.Mesh(new THREE.TorusGeometry(0.18+i*0.07,0.012,4,24),material('#b9e5df',0.25,{transparent:true,opacity:0.65}));ripple.rotation.x=-Math.PI/2;ripple.position.set(-0.85+i*0.55,0.45,-0.3+(i%2)*0.55);pool.add(ripple);poolRipples.push({ripple,phase:i*1.45});}
 
   // An actual translucent divider separates the lounge from the game nook.
   // The center opening stays wide enough for walking routes.
@@ -454,10 +427,16 @@ export function createOffice(host, { onSelect } = {}) {
   box(bossZone, 'nameplate gold accent', [0.92, 0.035, 0.025], [0, 0.86, -0.605], mats.lamp);
   for (const x of [-2.1, 2.1]) {
     const guest = group(bossZone, 'guest chair', [x, 0, -0.02]);
+    guest.rotation.y = Math.PI;
     box(guest, 'guest chair seat', [0.72, 0.15, 0.67], [0, 0.48, 0], mats.sofa);
     box(guest, 'guest chair back', [0.72, 0.82, 0.15], [0, 0.9, -0.24], mats.sofa);
     cylinder(guest, 'guest chair leg', 0.07, 0.07, 0.44, [0, 0.22, 0], mats.metal, 8);
   }
+  const bossChair = group(scene, 'boss chair', [-1.65, 0, 3.85]);
+  box(bossChair, 'seat', [0.76, 0.16, 0.7], [0, 0.68, 0], mats.navy);
+  box(bossChair, 'back', [0.76, 0.78, 0.15], [0, 1.05, 0.3], mats.navy);
+  cylinder(bossChair, 'post', 0.07, 0.07, 0.58, [0, 0.34, 0], mats.metal);
+  box(bossChair, 'foot', [0.6, 0.08, 0.54], [0, 0.06, 0], mats.metal);
 
   // 3D avatar inspired by the reference: black hair, warm skin, navy jacket,
   // cream trousers, monochrome sneakers, and white wired earbuds.
@@ -550,26 +529,6 @@ export function createOffice(host, { onSelect } = {}) {
     tip.rotation.z = (spike - 1) * -0.18;
   }
 
-  // Boss has a real activity loop, not a decorative idle animation:
-  // desk work -> walk the aisle -> team meeting -> lounge break -> coffee ->
-  // review board -> back to the executive desk.
-  const bossRoute = [
-    { x: -1.65, z: 4.45, face: Math.PI, activity: 'work', dwell: 7 },
-    { x: 2.5, z: 8.25, face: 0.55, activity: 'walk', dwell: 0 },
-    { x: 2.15, z: 6.35, face: Math.PI / 2, activity: 'dining', dwell: 6 },
-    { x: 11.0, z: 5.38, face: Math.PI, activity: 'meeting', dwell: 6 },
-    { x: 3.7, z: -0.45, face: 2.3, activity: 'lounge', dwell: 5 },
-    { x: -6.0, z: 3.7, face: Math.PI, activity: 'coffee', dwell: 5 },
-    { x: -12.25, z: -2.6, face: Math.PI / 2, activity: 'review', dwell: 5 },
-    { x: 13.2, z: 12.4, face: 0.5, activity: 'pool', dwell: 6 },
-    { x: -1.65, z: 4.45, face: Math.PI, activity: 'work', dwell: 8 }
-  ];
-  bossRoot.rotation.y = bossRoute[0].face;
-  const bossMotion = {
-    target: 0, walking: false, wait: bossRoute[0].dwell, activity: bossRoute[0].activity,
-    phase: 1.4, stepRate: 9.6, route: [], pathIndex: 0
-  };
-
   // Desk-side bookcase and colorful books.
   const shelf = group(scene, 'bookcase', [-8.6, 0, -1.6]);
   box(shelf, 'bookcase body', [0.72, 2.25, 2.2], [0, 1.2, 0], mats.wood);
@@ -586,344 +545,22 @@ export function createOffice(host, { onSelect } = {}) {
     scene.add(light);
   }
 
-  // Characters are deliberately simple toy-like figures; their wandering is decorative.
-  const characterGroups = [];
-  const waypoints = [
-    [[-7.5, 0, -0.15], [-10.2, 0, -1.8], [-12.2, 0, -2.65], [-10.65, 0, -2.6]],
-    [[-4.4, 0, 0.0], [-2.7, 0, 0.0], [-2.7, 0, 1.4], [-4.5, 0, 0.0]],
-    [[4.2, 0, 1.8], [4.2, 0, 2.75], [5.85, 0, 2.75], [5.85, 0, 1.8]],
-    [[3.45, 0, -0.3], [4.2, 0, -0.1], [4.8, 0, 0.4], [3.45, 0, -0.3]],
-    [[-7.8, 0, 3.8], [-10.6, 0, 5.3], [-10.6, 0, 5.3], [-7.8, 0, 3.8]],
-    [[4.2, 0, 1.8], [4.2, 0, 2.75], [5.85, 0, 2.75], [5.85, 0, 1.8]],
-    [[9.1, 0, -3.7], [9.1, 0, -1.2], [9.8, 0, -0.2], [9.1, 0, -3.7]],
-    [[-0.25, 0, -0.52], [-0.25, 0, -0.52], [-0.25, 0, -0.52]],
-    [[9.1, 0, -3.7], [9.1, 0, -1.2], [9.8, 0, -0.2], [9.1, 0, -3.7]]
-  ];
-
-  // Explicit home stations turn the office from a random walk into a small
-  // believable workplace: active agents stay by their own workstation, review
-  // agents hold a review pose, and idle agents wander through the social spaces.
-  const movementPlans = {
-    forge: { position: [-6.7, -0.8], face: Math.PI, mode: 'work', stationary: true },
-    scout: { position: [-3.5, -0.8], face: Math.PI, mode: 'review', stationary: true },
-    pixel: { position: [4.2, 1.8], mode: 'wander', points: waypoints[2], target: 1, speed: 0.62 },
-    orbit: { position: [3.45, -0.3], mode: 'wander', points: waypoints[3], target: 1, speed: 0.58 },
-    guard: { position: [-6.7, -4.25], face: Math.PI, mode: 'waiting', stationary: true },
-    nova: { position: [-3.5, -4.25], face: Math.PI, mode: 'work', stationary: true },
-    patch: { position: [3.0, -4.25], face: Math.PI, mode: 'work', stationary: true },
-    muse: { position: [6.05, -4.25], face: Math.PI, mode: 'review', stationary: true },
-    moss: { position: [-0.25, -4.25], face: Math.PI, mode: 'waiting', stationary: true }
-  };
-  // Navigation mesh: padded furniture footprints and room partitions. All agents
-  // use the same route planner so their paths bend around props instead of
-  // walking through desks, chairs, walls, shower fixtures, or pool water.
-  const navStep = 0.4;
-  const navMinX = -15.7;
-  const navMaxX = 21.5;
-  const navMinZ = -8.8;
-  const navMaxZ = 19.2;
-  const navWidth = Math.floor((navMaxX - navMinX) / navStep) + 1;
-  const navDepth = Math.floor((navMaxZ - navMinZ) / navStep) + 1;
-  const navBlockers = [
-    // Outer room shell.
-    { x1: -16.2, x2: -15.72, z1: -8.45, z2: 10.8 },
-    { x1: 15.72, x2: 16.2, z1: -8.45, z2: 10.8 },
-    { x1: -16.2, x2: 16.2, z1: -8.45, z2: -8.02 },
-    // Focus studio enclosure: east doorway stays open between z -4.0 and -0.8.
-    { x1: -15.9, x2: -10.3, z1: -5.32, z2: -5.02 },
-    { x1: -15.9, x2: -15.62, z1: -5.25, z2: 0.42 },
-    { x1: -10.55, x2: -10.3, z1: -5.25, z2: -4.0 },
-    { x1: -10.55, x2: -10.3, z1: -0.8, z2: 0.42 },
-    { x1: -15.85, x2: -14.45, z1: 0.18, z2: 0.42 },
-    { x1: -11.75, x2: -10.35, z1: 0.18, z2: 0.42 },
-    // Bookcases and worktable inside the new wing.
-    { x1: -15.3, x2: -13.95, z1: -4.9, z2: -4.2 },
-    { x1: -12.2, x2: -10.85, z1: -4.9, z2: -4.2 },
-    { x1: -14.9, x2: -12.9, z1: -2.88, z2: -1.62 },
-    { x1: -14.3, x2: -13.5, z1: -1.72, z2: -0.88 },
-    // Desk and chair envelopes, expanded with a walking clearance.
-    { x1: -8.34, x2: -5.06, z1: -3.5, z2: -0.65 },
-    { x1: -5.56, x2: -1.45, z1: -3.5, z2: -0.65 },
-    { x1: -2.3, x2: 1.8, z1: -3.5, z2: -0.65 },
-    { x1: -8.34, x2: -5.06, z1: -6.9, z2: -4.1 },
-    { x1: -5.56, x2: -1.45, z1: -6.9, z2: -4.1 },
-    { x1: -2.3, x2: 1.8, z1: -6.9, z2: -4.1 },
-    { x1: 1.33, x2: 4.7, z1: -6.9, z2: -4.1 },
-    { x1: 4.38, x2: 7.76, z1: -6.9, z2: -4.1 },
-    { x1: 7.42, x2: 10.8, z1: -6.9, z2: -4.1 },
-    // Glass pod dividers between workstations.
-    { x1: -5.12, x2: -4.88, z1: -3.96, z2: -1.96 },
-    { x1: -1.94, x2: -1.7, z1: -3.96, z2: -1.96 },
-    { x1: -5.12, x2: -4.88, z1: -6.31, z2: -4.39 },
-    { x1: -1.94, x2: -1.7, z1: -6.31, z2: -4.39 },
-    { x1: 1.3, x2: 1.54, z1: -6.31, z2: -4.39 },
-    { x1: 4.44, x2: 4.68, z1: -6.31, z2: -4.39 },
-    { x1: 7.56, x2: 7.8, z1: -6.31, z2: -4.39 },
-    // Reading nook, bookcase, lounge, and arcade room.
-    { x1: -9.16, x2: -8.04, z1: -3.08, z2: -0.12 },
-    // Actual lounge furniture footprints leave an aisle beside the sofa.
-    { x1: 3.86, x2: 7.92, z1: -3.75, z2: -1.57 },
-    { x1: 4.54, x2: 7.28, z1: -1.85, z2: -0.3 },
-    { x1: 7.55, x2: 8.48, z1: -3.17, z2: -1.8 },
-    // Divider panels between lounge and gaming room, with a walk-through gap.
-    { x1: 3.2, x2: 4.7, z1: 0.72, z2: 1.38 },
-    { x1: 7.25, x2: 8.75, z1: 0.72, z2: 1.38 },
-    // Arcade cabinets, console and beanbags; the carpet itself is walkable.
-    { x1: 4.55, x2: 5.55, z1: 1.24, z2: 2.44 },
-    { x1: 6.25, x2: 7.25, z1: 1.24, z2: 2.44 },
-    { x1: 3.75, x2: 4.8, z1: 3.18, z2: 4.3 },
-    { x1: 7.6, x2: 8.65, z1: 3.18, z2: 4.3 },
-    { x1: 5.25, x2: 7.15, z1: 3.5, z2: 4.1 },
-    // Pantry counters / fridge.
-    { x1: -8.1, x2: -4.3, z1: 0.9, z2: 3.15 },
-    // Executive desk and visitor seating.
-    { x1: -4.15, x2: 0.82, z1: 1.76, z2: 4.18 },
-    // Boss room's glass / wood partitions; the front remains open.
-    { x1: -4.34, x2: -4.17, z1: 1.78, z2: 5.74 },
-    { x1: -4.19, x2: -2.1, z1: 1.58, z2: 1.82 },
-    { x1: -0.82, x2: 1.03, z1: 1.58, z2: 1.82 },
-    { x1: 0.92, x2: 1.08, z1: 1.78, z2: 2.96 },
-    { x1: 0.92, x2: 1.08, z1: 4.25, z2: 5.72 },
-    // Bathroom external walls and door jambs.
-    { x1: -12.72, x2: -12.38, z1: 2.9, z2: 7.12 },
-    { x1: -8.63, x2: -8.29, z1: 2.9, z2: 7.12 },
-    { x1: -12.72, x2: -8.29, z1: 2.84, z2: 3.16 },
-    { x1: -12.72, x2: -11.18, z1: 6.84, z2: 7.16 },
-    { x1: -9.82, x2: -8.29, z1: 6.84, z2: 7.16 },
-    // Bathroom fixtures.
-    { x1: -12.0, x2: -10.95, z1: 3.2, z2: 4.65 },
-    { x1: -10.0, x2: -9.08, z1: 3.65, z2: 4.8 },
-    { x1: -10.35, x2: -8.98, z1: 5.48, z2: 6.15 },
-    // Meeting room furniture and chairs.
-    { x1: 9.45, x2: 12.65, z1: 1.35, z2: 5.0 },
-    // Dining room glass partitions and the table/chair cluster.
-    { x1: 1.1, x2: 1.4, z1: 4.58, z2: 7.58 },
-    { x1: 8.0, x2: 8.3, z1: 4.58, z2: 7.58 },
-    { x1: 2.53, x2: 4.05, z1: 4.46, z2: 4.78 },
-    { x1: 5.35, x2: 6.87, z1: 4.46, z2: 4.78 },
-    { x1: 2.85, x2: 6.55, z1: 4.96, z2: 7.24 },
-    // Pool water, coping, sunbeds and parasol. The surrounding deck stays walkable.
-    { x1: 14.2, x2: 19.85, z1: 13.6, z2: 17.35 },
-    { x1: 13.45, x2: 14.35, z1: 15.8, z2: 17.2 },
-    { x1: 19.65, x2: 20.55, z1: 15.8, z2: 17.2 }
-  ];
-  const navBlockedAt = (x, z) => {
-    if (x < navMinX || x > navMaxX || z < navMinZ || z > navMaxZ) return true;
-    if (z < 10.65 && (x < -15.62 || x > 15.62)) return true;
-    const clearance = 0.22;
-    return navBlockers.some((r) =>
-      x >= r.x1 - clearance && x <= r.x2 + clearance &&
-      z >= r.z1 - clearance && z <= r.z2 + clearance
-    );
-  };
-  const navIndex = (ix, iz) => iz * navWidth + ix;
-  const navPoint = (ix, iz) => [navMinX + ix * navStep, navMinZ + iz * navStep];
-  const navCellFor = (point) => ({
-    ix: Math.max(0, Math.min(navWidth - 1, Math.round((point.x - navMinX) / navStep))),
-    iz: Math.max(0, Math.min(navDepth - 1, Math.round((point.z - navMinZ) / navStep)))
+  const FLOOR_Y=0.09,frost=new THREE.MeshStandardMaterial({color:'#dcebe6',roughness:0.4,transparent:true,opacity:0.62});
+  WALLS.forEach(w=>{const tall=w.h>1.6,gm=w.style==='frost'?frost:mats.glass;wallSegments(w).forEach(s=>{const alongX=s.sx>s.sz,baseH=tall?w.h:0.55;box(scene,'sekat base',[s.sx,baseH,s.sz],[s.x,FLOOR_Y+baseH/2,s.z],tall?mats.wall:mats.woodLight);if(!tall){const gh=w.h-0.55;box(scene,'sekat glass',[alongX?s.sx:0.04,gh,alongX?0.04:s.sz],[s.x,FLOOR_Y+0.55+gh/2,s.z],gm,{castShadow:false});}box(scene,'sekat rail',[alongX?s.sx+0.1:0.12,0.07,alongX?0.12:s.sz+0.1],[s.x,FLOOR_Y+w.h+0.03,s.z],mats.wood);for(const e of [-1,1])box(scene,'sekat post',[0.12,w.h,0.12],[alongX?s.x+e*s.sx/2:s.x,FLOOR_Y+w.h/2,alongX?s.z:s.z+e*s.sz/2],mats.wood);});});
+  const characterGroups=[],actors=[];
+  characters.forEach((info,i)=>{
+    const c=group(scene,'character-'+info.id,[0,GROUND,0]);c.userData.character=info;c.userData.phase=i*1.8;
+    const skin=material(info.color),shirt=material(info.shirt),hair=material(info.hair),face=material('#4b3b33'),head=group(c,'head pivot',[0,1.1,0]);
+    sphere(head,'head',0.27,[0,0.15,0],skin,[0.88,1.02,0.88]);sphere(head,'hair',0.275,[0,0.29,-0.035],hair,[0.9,0.55,0.9]);sphere(head,'eye-left',0.025,[-0.085,0.17,0.232],face,[1,1,0.5]);sphere(head,'eye-right',0.025,[0.085,0.17,0.232],face,[1,1,0.5]);sphere(c,'body',0.28,[0,0.77,0],shirt,[0.83,1.08,0.62]);
+    const arms=[-1,1].map(side=>{const arm=group(c,'arm',[side*0.29,0.95,0]);sphere(arm,'sleeve',0.105,[0,-0.07,0],shirt,[0.9,1.2,0.9]);sphere(arm,'arm',0.095,[0,-0.2,0],skin,[0.82,1.7,0.82]);sphere(arm,'hand',0.08,[0,-0.36,0.02],skin);return arm;});
+    const legs=[-1,1].map(side=>{const leg=group(c,'leg',[side*0.12,0.52,0]);cylinder(leg,'leg',0.085,0.095,0.4,[0,-0.19,0],mats.navy,8);sphere(leg,'shoe',0.12,[0,-0.4,0.04],mats.cream,[1,0.58,1.35]);return leg;});
+    const color=info.status==='working'?'#79b88a':info.status==='review'?'#e0b46b':info.status==='blocked'?'#d78370':'#96a3b0',stateMaterial=new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:0.58,roughness:0.35});
+    c.userData.statusOrb=sphere(c,'status-orb',0.075,[0,1.78,0],stateMaterial);const ring=new THREE.Mesh(new THREE.TorusGeometry(0.11,0.018,6,14),stateMaterial);ring.name='status-ring';ring.position.set(0,1.78,0);ring.rotation.x=Math.PI/2;c.add(ring);c.userData.statusRing=ring;
+    characterGroups.push(c);actors.push(makeActor(c,{legs,arms,head},{home:i<6?i:null,speed:0.95+(i%3)*0.12,phase:i*1.8}));
   });
-  const nearestWalkableCell = (point) => {
-    const start = navCellFor(point);
-    if (!navBlockedAt(...navPoint(start.ix, start.iz))) return start;
-    for (let radius = 1; radius <= 18; radius++) {
-      let best = null;
-      let bestDistance = Infinity;
-      for (let dx = -radius; dx <= radius; dx++) {
-        for (let dz = -radius; dz <= radius; dz++) {
-          if (Math.max(Math.abs(dx), Math.abs(dz)) !== radius) continue;
-          const ix = start.ix + dx;
-          const iz = start.iz + dz;
-          if (ix < 0 || ix >= navWidth || iz < 0 || iz >= navDepth) continue;
-          const p = navPoint(ix, iz);
-          if (navBlockedAt(p[0], p[1])) continue;
-          const d = Math.hypot(p[0] - point.x, p[1] - point.z);
-          if (d < bestDistance) { best = { ix, iz }; bestDistance = d; }
-        }
-      }
-      if (best) return best;
-    }
-    return start;
-  };
-  const findWalkPath = (from, to) => {
-    const start = nearestWalkableCell(from);
-    const goal = nearestWalkableCell(to);
-    const startId = navIndex(start.ix, start.iz);
-    const goalId = navIndex(goal.ix, goal.iz);
-    if (startId === goalId) return [navPoint(goal.ix, goal.iz)];
-    const total = navWidth * navDepth;
-    const gScore = new Float32Array(total);
-    gScore.fill(Infinity);
-    const cameFrom = new Int32Array(total);
-    cameFrom.fill(-1);
-    const closed = new Uint8Array(total);
-    const heap = [];
-    const heuristic = (a, b) => {
-      const ax = a % navWidth, az = Math.floor(a / navWidth);
-      const bx = b % navWidth, bz = Math.floor(b / navWidth);
-      const dx = Math.abs(ax - bx), dz = Math.abs(az - bz);
-      return Math.max(dx, dz) + (Math.SQRT2 - 1) * Math.min(dx, dz);
-    };
-    const push = (node) => {
-      heap.push(node);
-      let i = heap.length - 1;
-      while (i > 0) {
-        const parent = (i - 1) >> 1;
-        if (heap[parent].f <= node.f) break;
-        heap[i] = heap[parent]; i = parent;
-      }
-      heap[i] = node;
-    };
-    const pop = () => {
-      if (!heap.length) return null;
-      const top = heap[0];
-      const last = heap.pop();
-      if (heap.length) {
-        let i = 0;
-        while (true) {
-          let child = i * 2 + 1;
-          if (child >= heap.length) break;
-          if (child + 1 < heap.length && heap[child + 1].f < heap[child].f) child++;
-          if (heap[child].f >= last.f) break;
-          heap[i] = heap[child]; i = child;
-        }
-        heap[i] = last;
-      }
-      return top;
-    };
-    gScore[startId] = 0;
-    push({ id: startId, f: heuristic(startId, goalId) });
-    const directions = [
-      [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
-      [1, 1, Math.SQRT2], [1, -1, Math.SQRT2], [-1, 1, Math.SQRT2], [-1, -1, Math.SQRT2]
-    ];
-    let found = false;
-    let iterations = 0;
-    while (heap.length && iterations < total * 4) {
-      iterations++;
-      const current = pop().id;
-      if (closed[current]) continue;
-      if (current === goalId) { found = true; break; }
-      closed[current] = 1;
-      const cx = current % navWidth;
-      const cz = Math.floor(current / navWidth);
-      for (const [dx, dz, cost] of directions) {
-        const nx = cx + dx, nz = cz + dz;
-        if (nx < 0 || nx >= navWidth || nz < 0 || nz >= navDepth) continue;
-        const [wx, wz] = navPoint(nx, nz);
-        if (navBlockedAt(wx, wz)) continue;
-        // Do not cut diagonally through the corner of a desk or partition.
-        if (dx && dz) {
-          const sideA = navPoint(cx + dx, cz);
-          const sideB = navPoint(cx, cz + dz);
-          if (navBlockedAt(...sideA) || navBlockedAt(...sideB)) continue;
-        }
-        const nextId = navIndex(nx, nz);
-        if (closed[nextId]) continue;
-        const score = gScore[current] + cost;
-        if (score >= gScore[nextId]) continue;
-        cameFrom[nextId] = current;
-        gScore[nextId] = score;
-        push({ id: nextId, f: score + heuristic(nextId, goalId) });
-      }
-    }
-    // If a room is sealed or unreachable, keep the character on its current
-    // safe tile instead of taking a straight-line shortcut through furniture.
-    if (!found) return [navPoint(start.ix, start.iz)];
-    const rawIds = [];
-    let cursor = goalId;
-    rawIds.push(cursor);
-    while (cursor !== startId && cameFrom[cursor] !== -1) {
-      cursor = cameFrom[cursor];
-      rawIds.push(cursor);
-    }
-    rawIds.reverse();
-    const raw = rawIds.map((id) => navPoint(id % navWidth, Math.floor(id / navWidth)));
-    const clearSegment = (a, b) => {
-      const distance = Math.hypot(b[0] - a[0], b[1] - a[1]);
-      const checks = Math.max(2, Math.ceil(distance / (navStep * 0.32)));
-      for (let i = 1; i < checks; i++) {
-        const t = i / checks;
-        if (navBlockedAt(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)) return false;
-      }
-      return true;
-    };
-    // String-pull the grid route into a few natural arcs instead of tiny right angles.
-    const smooth = [raw[0]];
-    let anchor = 0;
-    while (anchor < raw.length - 1) {
-      let next = raw.length - 1;
-      while (next > anchor + 1 && !clearSegment(raw[anchor], raw[next])) next--;
-      smooth.push(raw[next]);
-      anchor = next;
-    }
-    return smooth;
-  };
-
-  characters.forEach((info, i) => {
-    // Working/review agents spawn at a dedicated home station. Wanderers use
-    // a navigation-safe starting cell, so no character appears inside furniture.
-    const plan = movementPlans[info.id];
-    const requestedSpawn = plan?.position ? [plan.position[0], 0, plan.position[1]] : waypoints[i][0];
-    const spawnCell = plan?.stationary || plan?.position
-      ? null
-      : nearestWalkableCell({ x: requestedSpawn[0], z: requestedSpawn[2] });
-    const spawnPoint = plan?.position
-      ? plan.position
-      : navPoint(spawnCell.ix, spawnCell.iz);
-    const c = group(scene, 'character-' + info.id, [spawnPoint[0], 0, spawnPoint[1]]);
-    if (Number.isFinite(plan?.face)) c.rotation.y = plan.face;
-    c.userData.character = info;
-    const skin = material(info.color);
-    const shirt = material(info.shirt);
-    const hair = material(info.hair);
-    const characterHead = sphere(c, 'head', 0.27, [0, 1.25, 0], skin, [0.88, 1.02, 0.88]);
-    sphere(c, 'hair', 0.275, [0, 1.39, -0.035], hair, [0.9, 0.55, 0.9]);
-    const characterBody = sphere(c, 'body', 0.28, [0, 0.77, 0], shirt, [0.83, 1.08, 0.62]);
-    const armL = group(c, 'left arm pivot', [-0.23, 0.94, 0]);
-    const armR = group(c, 'right arm pivot', [0.23, 0.94, 0]);
-    sphere(armL, 'arm-left', 0.105, [-0.045, -0.17, 0], skin, [0.82, 1.2, 0.82]);
-    sphere(armR, 'arm-right', 0.105, [0.045, -0.17, 0], skin, [0.82, 1.2, 0.82]);
-    const legL = group(c, 'left leg pivot', [-0.12, 0.47, 0]);
-    const legR = group(c, 'right leg pivot', [0.12, 0.47, 0]);
-    cylinder(legL, 'leg-left', 0.085, 0.095, 0.4, [0, -0.14, 0], mats.navy, 8);
-    cylinder(legR, 'leg-right', 0.085, 0.095, 0.4, [0, -0.14, 0], mats.navy, 8);
-    sphere(legL, 'shoe-left', 0.12, [0, -0.34, 0.04], mats.cream, [1, 0.58, 1.35]);
-    sphere(legR, 'shoe-right', 0.12, [0, -0.34, 0.04], mats.cream, [1, 0.58, 1.35]);
-    const face = material('#4b3b33');
-    sphere(c, 'eye-left', 0.025, [-0.085, 1.27, 0.232], face, [1, 1, 0.5]);
-    sphere(c, 'eye-right', 0.025, [0.085, 1.27, 0.232], face, [1, 1, 0.5]);
-    const stateColor = info.status === 'working' ? '#79b88a' : info.status === 'review' ? '#e0b46b' : info.status === 'blocked' ? '#d78370' : '#96a3b0';
-    const stateMaterial = new THREE.MeshStandardMaterial({ color: stateColor, emissive: stateColor, emissiveIntensity: 0.58, roughness: 0.35 });
-    const stateOrb = sphere(c, 'status-orb', 0.075, [0, 1.78, 0], stateMaterial);
-    const stateRing = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.018, 6, 14), stateMaterial);
-    stateRing.name = 'status-ring';
-    stateRing.position.set(0, 1.78, 0);
-    stateRing.rotation.x = Math.PI / 2;
-    c.add(stateRing);
-    c.userData.statusOrb = stateOrb;
-    c.userData.statusRing = stateRing;
-    const points = plan?.points || waypoints[i];
-    const target = Math.min(plan?.target ?? 1, points.length - 1);
-    const stationary = Boolean(plan?.stationary);
-    const firstTarget = points[target] || points[0];
-    c.userData.motion = {
-      points, target, speed: plan?.speed ?? (0.82 + (i % 3) * 0.08),
-      phase: i * 1.8, legs: [legL, legR], arms: [armL, armR], body: characterBody, head: characterHead,
-      route: stationary ? [] : findWalkPath(c.position, { x: firstTarget[0], z: firstTarget[2] }),
-      pathIndex: 0, walking: !stationary, walkTimer: 1.2 + i * 0.7,
-      mode: plan?.mode || 'wander'
-    };
-    characterGroups.push(c);
-  });
-
-  // A tiny mailbox and outdoor stepping stones add a playful dollhouse edge.
-  box(scene, 'welcome sign post', [0.12, 1.45, 0.12], [-11.35, 0.68, 8.3], mats.wood);
-  box(scene, 'welcome sign', [1.8, 0.62, 0.14], [-11.35, 1.42, 8.27], mats.cream);
-  for (let i = 0; i < 7; i++) {
-    const stone = cylinder(scene, 'stepping stone', 0.36, 0.38, 0.1, [-7.5 + i * 2.5, -0.05, 8.0], material(i % 2 ? '#d6c9b3' : '#c7bba8'), 8);
-    stone.rotation.y = i * 0.3;
-  }
-
+  const bossActor=makeActor(bossRoot,{legs:bossLegs,arms:bossArms.map(o=>o.group),head:bossHead,headTilt:false},{boss:true,speed:1.1,phase:1.4});actors.push(bossActor);
+  const deskSt=stations.filter(s=>s.tag==='desk'),meetSt=stations.filter(s=>s.tag==='meet');
+  actors.forEach((a,i)=>{seatAt(a,a.boss?stations.find(s=>s.tag==='boss'):i<6?deskSt[i]:meetSt[(i-6)%meetSt.length]);applyPose(a,1,0);});
   const originalCamera = new THREE.Vector3(34, 26, 40);
   const resize = () => {
     const width = Math.max(host.clientWidth, 320);
@@ -959,13 +596,13 @@ export function createOffice(host, { onSelect } = {}) {
     focus: { position: [-4.8, 8.5, 13.5], target: [-13.1, 1.1, -2.4] },
     boss: { position: [10.5, 8.5, 13], target: [-1.65, 1.05, 3.3] },
     studio: { position: [12, 10, 16], target: [0.2, 1, -3.0] },
-    meeting: { position: [15, 10, 16], target: [11.0, 1, 3.15] },
+    meeting: { position: [11, 8.5, 12], target: [10.6, 1, 0.1] },
     lounge: { position: [14, 10, 10], target: [5.7, 1, -1.6] },
     games: { position: [13, 9, 12], target: [6.2, 0.8, 2.0] },
     pantry: { position: [9, 9, 14], target: [-6.4, 1, 1.9] },
-    bathroom: { position: [-2.5, 8.8, 13], target: [-10.5, 1.25, 5.0] },
-    dining: { position: [13, 9.5, 18], target: [4.7, 1, 6.0] },
-    pool: { position: [23.5, 13.5, 25], target: [17.0, 0.5, 15.5] }
+    bathroom: { position: [-5, 8, 15], target: [-11.4, 0.8, 5.9] },
+    dining: { position: [-2, 9, 17], target: [-7.2, 0.8, 5.8] },
+    pool: { position: [19, 9, 15], target: [11.3, 0.3, 5.6] }
   };
   const focusRoom = (room) => {
     const view = roomViews[room] || roomViews.all;
@@ -1007,309 +644,14 @@ export function createOffice(host, { onSelect } = {}) {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const animate = () => {
     animationFrame = requestAnimationFrame(animate);
-    const delta = Math.min(clock.getDelta(), 0.04);
-    const elapsed = clock.elapsedTime;
+    const delta = Math.min(clock.getDelta(), 0.04), elapsed = clock.elapsedTime;
     if (!reducedMotion) {
-      const bossWave = elapsed * bossMotion.stepRate + bossMotion.phase;
-      if (bossMotion.walking) {
-        const waypoint = bossRoute[bossMotion.target];
-        // Look ahead before reaching each intermediate node. A* already
-        // returns line-of-sight-safe segments, so this removes the stop-start
-        // footwork at every corner without cutting through obstacles.
-        while (bossMotion.pathIndex < bossMotion.route.length - 1) {
-          const probe = bossMotion.route[bossMotion.pathIndex];
-          if (Math.hypot(probe[0] - bossRoot.position.x, probe[1] - bossRoot.position.z) >= 0.34) break;
-          bossMotion.pathIndex++;
-        }
-        const pathPoint = bossMotion.route[bossMotion.pathIndex];
-        if (!pathPoint) {
-          bossRoot.position.x = waypoint.x;
-          bossRoot.position.z = waypoint.z;
-          bossRoot.rotation.y = waypoint.face;
-          bossRoot.position.y = 0;
-          bossMotion.walking = false;
-          bossMotion.activity = waypoint.activity;
-          bossMotion.wait = waypoint.dwell;
-        } else {
-          const dx = pathPoint[0] - bossRoot.position.x;
-          const dz = pathPoint[1] - bossRoot.position.z;
-          const distance = Math.hypot(dx, dz);
-          if (distance < 0.16) {
-            if (bossMotion.pathIndex < bossMotion.route.length - 1) {
-              bossMotion.pathIndex++;
-            } else {
-              bossRoot.position.x = pathPoint[0];
-              bossRoot.position.z = pathPoint[1];
-              bossRoot.rotation.y = waypoint.face;
-              bossRoot.position.y = 0;
-              bossMotion.walking = false;
-              bossMotion.activity = waypoint.activity;
-              bossMotion.wait = waypoint.dwell;
-              bossLegs.forEach((leg) => { leg.rotation.x = 0; leg.rotation.z = 0; });
-            }
-          } else {
-            const desiredAngle = Math.atan2(dx, dz);
-            const angleDelta = Math.atan2(
-              Math.sin(desiredAngle - bossRoot.rotation.y),
-              Math.cos(desiredAngle - bossRoot.rotation.y)
-            );
-            bossRoot.rotation.y += angleDelta * Math.min(1, delta * 6.2);
-            const ease = THREE.MathUtils.clamp(distance * 1.7, 0.25, 1);
-            const step = Math.min(1.45 * delta * ease, distance);
-            let nextBossX = bossRoot.position.x + (dx / distance) * step;
-            let nextBossZ = bossRoot.position.z + (dz / distance) * step;
-            let bossCrowded = false;
-            for (let j = 0; j < characterGroups.length; j++) {
-              const teammate = characterGroups[j];
-              const sx = nextBossX - teammate.position.x;
-              const sz = nextBossZ - teammate.position.z;
-              const separation = Math.hypot(sx, sz);
-              if (separation < 0.62) {
-                const angle = separation > 0.001 ? Math.atan2(sz, sx) : bossMotion.phase + j * 2.399;
-                const push = (0.62 - separation) * 0.58;
-                const candidateX = nextBossX + Math.cos(angle) * push;
-                const candidateZ = nextBossZ + Math.sin(angle) * push;
-                if (!navBlockedAt(candidateX, candidateZ)) {
-                  nextBossX = candidateX;
-                  nextBossZ = candidateZ;
-                } else {
-                  bossCrowded = true;
-                }
-              }
-            }
-            if (!navBlockedAt(nextBossX, nextBossZ) && !bossCrowded) {
-              bossRoot.position.x = nextBossX;
-              bossRoot.position.z = nextBossZ;
-            } else {
-              bossMotion.route = findWalkPath(bossRoot.position, { x: waypoint.x, z: waypoint.z });
-              bossMotion.pathIndex = 0;
-            }
-            const stride = Math.sin(bossWave) * 0.58;
-            bossLegs[0].rotation.x = stride;
-            bossLegs[1].rotation.x = -stride;
-            bossLegs[0].rotation.z = Math.cos(bossWave) * 0.035;
-            bossLegs[1].rotation.z = -Math.cos(bossWave) * 0.035;
-            bossArms.forEach(({ group: arm, side }) => {
-              arm.rotation.x = -Math.sin(bossWave) * 0.34;
-              arm.rotation.z = side * Math.sin(bossWave) * 0.07;
-            });
-            bossRoot.position.y = Math.abs(Math.sin(bossWave)) * 0.06;
-            bossHead.rotation.y = Math.sin(elapsed * 0.75) * 0.04;
-          }
-        }
-      } else {
-        bossMotion.wait = Math.max(0, bossMotion.wait - delta);
-        if (bossMotion.wait <= 0) {
-          bossMotion.target = (bossMotion.target + 1) % bossRoute.length;
-          const next = bossRoute[bossMotion.target];
-          bossMotion.route = findWalkPath(bossRoot.position, { x: next.x, z: next.z });
-          bossMotion.pathIndex = 0;
-          bossMotion.walking = true;
-          bossMotion.activity = 'walk';
-        }
-
-        // Distinct readable poses while the boss pauses at each destination.
-        const rest = elapsed * 1.7 + bossMotion.phase;
-        bossRoot.position.y = Math.sin(elapsed * 1.15) * 0.012;
-        bossHead.rotation.y = Math.sin(elapsed * 0.55) * 0.045;
-        bossHead.rotation.z = Math.sin(elapsed * 0.8) * 0.012;
-        bossLegs[0].rotation.x = 0;
-        bossLegs[1].rotation.x = 0;
-        bossArms.forEach(({ group: arm, side }) => {
-          arm.rotation.x = 0;
-          arm.rotation.z = 0;
-          if (bossMotion.activity === 'work') {
-            arm.rotation.x = -0.88 + Math.sin(rest * 2.8 + side) * 0.035;
-            arm.rotation.z = side * 0.045;
-            bossHead.rotation.x = Math.sin(rest * 1.5) * 0.035;
-          } else if (bossMotion.activity === 'meeting') {
-            arm.rotation.x = -0.42 + Math.sin(rest * 2.2 + side) * 0.14;
-            arm.rotation.z = side * (0.27 + Math.sin(rest * 1.8) * 0.08);
-            bossHead.rotation.y = Math.sin(rest * 1.1) * 0.12;
-          } else if (bossMotion.activity === 'coffee') {
-            arm.rotation.x = side > 0 ? -1.35 + Math.sin(rest * 1.4) * 0.06 : -0.08;
-            arm.rotation.z = side > 0 ? -0.2 : -0.02;
-            bossHead.rotation.x = side > 0 ? -0.09 : 0;
-          } else if (bossMotion.activity === 'lounge') {
-            arm.rotation.x = Math.sin(rest * 0.75 + side) * 0.05;
-            arm.rotation.z = side * 0.11;
-            bossHead.rotation.x = Math.sin(rest * 0.7) * 0.025;
-          } else if (bossMotion.activity === 'review') {
-            arm.rotation.x = side > 0 ? -0.55 + Math.sin(rest * 2.0) * 0.12 : -0.18;
-            arm.rotation.z = side * (side > 0 ? 0.32 : 0.07);
-            bossHead.rotation.y = Math.sin(rest * 0.9) * 0.07;
-          } else if (bossMotion.activity === 'dining') {
-            arm.rotation.x = side > 0 ? -1.08 + Math.sin(rest * 1.6) * 0.06 : -0.08 + Math.sin(rest * 0.9) * 0.025;
-            arm.rotation.z = side > 0 ? -0.18 : 0.04;
-            bossHead.rotation.x = side > 0 ? -0.08 : 0;
-          } else if (bossMotion.activity === 'pool') {
-            arm.rotation.x = -0.12 + Math.sin(rest * 0.8 + side) * 0.08;
-            arm.rotation.z = side * (0.2 + Math.sin(rest * 0.6) * 0.08);
-            bossHead.rotation.y = Math.sin(rest * 0.55) * 0.11;
-            bossHead.rotation.x = Math.sin(rest * 0.8) * 0.025;
-          }
-        });
-      }
-      plantLeaves.forEach(({ leaf, phase }) => {
-        leaf.rotation.z = Math.sin(elapsed * 0.55 + phase) * 0.045;
-        leaf.rotation.x = Math.cos(elapsed * 0.42 + phase) * 0.025;
-      });
-      poolRipples.forEach(({ ripple, phase }) => {
-        const wave = (elapsed * 0.42 + phase) % 1;
-        const scale = 0.72 + wave * 0.48;
-        ripple.scale.set(scale, scale, scale);
-        ripple.material.opacity = 0.16 + (1 - wave) * 0.38;
-      });
+      actors.forEach(actor => updateActor(actor,delta,elapsed)); separate(actors,delta);
+      plantLeaves.forEach(({leaf,phase})=>{leaf.rotation.z=Math.sin(elapsed*0.55+phase)*0.045;leaf.rotation.x=Math.cos(elapsed*0.42+phase)*0.025;});
+      poolRipples.forEach(({ripple,phase})=>{const wave=(elapsed*0.42+phase)%1,scale=0.72+wave*0.48;ripple.scale.set(scale,scale,scale);ripple.material.opacity=0.16+(1-wave)*0.38;});
     }
-    characterGroups.forEach((character, i) => {
-      const motion = character.userData.motion;
-      if (character.userData.statusOrb && character.userData.statusRing) {
-        const pulse = 1 + Math.sin(elapsed * 2.35 + motion.phase) * 0.065;
-        character.userData.statusOrb.scale.setScalar(pulse);
-        character.userData.statusRing.rotation.z += delta * 0.14;
-      }
-      if (reducedMotion) return;
-
-      // Stationary characters still feel alive, but no longer roam randomly
-      // away from their assigned activity or clip through a desk to get there.
-      if (motion.mode === 'work' || motion.mode === 'review' || motion.mode === 'waiting') {
-        character.position.y = Math.sin(elapsed * 1.15 + motion.phase) * 0.009;
-        if (motion.head) {
-          motion.head.rotation.y = Math.sin(elapsed * 0.55 + motion.phase) * (motion.mode === 'waiting' ? 0.09 : 0.035);
-          motion.head.rotation.x = Math.sin(elapsed * 0.8 + motion.phase) * 0.022;
-        }
-        motion.legs.forEach((leg) => { leg.rotation.x = 0; leg.rotation.z = 0; });
-        if (motion.mode === 'work') {
-          motion.arms[0].rotation.x = -0.86 + Math.sin(elapsed * 3.2 + motion.phase) * 0.045;
-          motion.arms[1].rotation.x = -0.91 + Math.cos(elapsed * 3.0 + motion.phase) * 0.045;
-          motion.arms[0].rotation.z = -0.045;
-          motion.arms[1].rotation.z = 0.045;
-          if (motion.body) motion.body.rotation.z = Math.sin(elapsed * 2.2 + motion.phase) * 0.012;
-        } else if (motion.mode === 'review') {
-          motion.arms[0].rotation.x = -0.42 + Math.sin(elapsed * 1.8 + motion.phase) * 0.09;
-          motion.arms[1].rotation.x = -0.52 + Math.cos(elapsed * 1.5 + motion.phase) * 0.07;
-          motion.arms[0].rotation.z = -0.08;
-          motion.arms[1].rotation.z = 0.08;
-          if (motion.body) motion.body.rotation.z = Math.sin(elapsed * 0.75 + motion.phase) * 0.012;
-        } else {
-          motion.arms[0].rotation.x = Math.sin(elapsed * 0.7 + motion.phase) * 0.035;
-          motion.arms[1].rotation.x = -Math.sin(elapsed * 0.7 + motion.phase) * 0.035;
-          motion.arms[0].rotation.z = -0.025;
-          motion.arms[1].rotation.z = 0.025;
-        }
-        return;
-      }
-
-      if (motion.walking) {
-        // Advance across close route nodes before stepping, keeping motion
-        // continuous while preserving the A* collision-safe path.
-        while (motion.pathIndex < motion.route.length - 1) {
-          const probe = motion.route[motion.pathIndex];
-          if (Math.hypot(probe[0] - character.position.x, probe[1] - character.position.z) >= 0.34) break;
-          motion.pathIndex++;
-        }
-        const waypoint = motion.route[motion.pathIndex];
-        if (!waypoint) {
-          motion.walking = false;
-          motion.walkTimer = 1.2 + (i % 3) * 0.9;
-          return;
-        }
-        const dx = waypoint[0] - character.position.x;
-        const dz = waypoint[1] - character.position.z;
-        const distance = Math.hypot(dx, dz);
-        if (distance < 0.16) {
-          if (motion.pathIndex < motion.route.length - 1) {
-            motion.pathIndex++;
-          } else {
-            character.position.x = waypoint[0];
-            character.position.z = waypoint[1];
-            motion.walking = false;
-            motion.walkTimer = 1.25 + (i % 3) * 0.8;
-            motion.legs.forEach((leg) => { leg.rotation.x = 0; leg.rotation.z = 0; });
-            motion.arms.forEach((arm) => { arm.rotation.x = 0; arm.rotation.z = 0; });
-          }
-          return;
-        }
-
-        const desiredAngle = Math.atan2(dx, dz);
-        const angleDelta = Math.atan2(
-          Math.sin(desiredAngle - character.rotation.y),
-          Math.cos(desiredAngle - character.rotation.y)
-        );
-        character.rotation.y += angleDelta * Math.min(1, delta * 6.8);
-        // Ease in and out at each corner so the little people do not snap-turn.
-        const ease = THREE.MathUtils.clamp(distance * 1.8, 0.24, 1);
-        const step = Math.min(motion.speed * delta * ease, distance);
-        let nextX = character.position.x + (dx / distance) * step;
-        let nextZ = character.position.z + (dz / distance) * step;
-
-        // A small separation impulse prevents teammates from occupying the
-        // same point in a narrow aisle while still respecting static blockers.
-        for (let j = 0; j < characterGroups.length; j++) {
-          if (i === j) continue;
-          const other = characterGroups[j];
-          const sepX = nextX - other.position.x;
-          const sepZ = nextZ - other.position.z;
-          const sep = Math.hypot(sepX, sepZ);
-          if (sep < 0.56) {
-            const angle = sep > 0.001 ? Math.atan2(sepZ, sepX) : (i + 1) * 2.399 + j;
-            const push = (0.56 - sep) * 0.45;
-            const pushedX = nextX + Math.cos(angle) * push;
-            const pushedZ = nextZ + Math.sin(angle) * push;
-            if (!navBlockedAt(pushedX, pushedZ)) { nextX = pushedX; nextZ = pushedZ; }
-          }
-        }
-        const bossDX = nextX - bossRoot.position.x;
-        const bossDZ = nextZ - bossRoot.position.z;
-        const bossDistance = Math.hypot(bossDX, bossDZ);
-        if (bossDistance < 0.62) {
-          const angle = bossDistance > 0.001 ? Math.atan2(bossDZ, bossDX) : (i + 1) * 2.399;
-          const push = (0.62 - bossDistance) * 0.45;
-          const pushedX = nextX + Math.cos(angle) * push;
-          const pushedZ = nextZ + Math.sin(angle) * push;
-          if (!navBlockedAt(pushedX, pushedZ)) { nextX = pushedX; nextZ = pushedZ; }
-        }
-        if (!navBlockedAt(nextX, nextZ)) {
-          character.position.x = nextX;
-          character.position.z = nextZ;
-        } else {
-          const target = motion.points[motion.target];
-          motion.route = findWalkPath(character.position, { x: target[0], z: target[2] });
-          motion.pathIndex = 0;
-        }
-
-        const stride = Math.sin(elapsed * 10.5 + motion.phase);
-        motion.legs[0].rotation.x = stride * 0.43;
-        motion.legs[1].rotation.x = -stride * 0.43;
-        motion.legs[0].rotation.z = Math.cos(elapsed * 5.25 + motion.phase) * 0.025;
-        motion.legs[1].rotation.z = -Math.cos(elapsed * 5.25 + motion.phase) * 0.025;
-        motion.arms[0].rotation.x = -stride * 0.31;
-        motion.arms[1].rotation.x = stride * 0.31;
-        motion.arms[0].rotation.z = -Math.sin(elapsed * 5.25 + motion.phase) * 0.035;
-        motion.arms[1].rotation.z = Math.sin(elapsed * 5.25 + motion.phase) * 0.035;
-        character.position.y = Math.abs(Math.sin(elapsed * 10.5 + motion.phase)) * 0.035;
-        if (motion.body) motion.body.rotation.z = -Math.sin(angleDelta) * 0.035;
-      } else {
-        motion.walkTimer -= delta;
-        character.position.y = Math.sin(elapsed * 1.3 + motion.phase) * 0.012;
-        motion.legs[0].rotation.x = 0;
-        motion.legs[1].rotation.x = 0;
-        motion.legs[0].rotation.z = 0;
-        motion.legs[1].rotation.z = 0;
-        motion.arms[0].rotation.x = Math.sin(elapsed * 0.8 + motion.phase) * 0.035;
-        motion.arms[1].rotation.x = -Math.sin(elapsed * 0.8 + motion.phase) * 0.035;
-        if (motion.body) motion.body.rotation.z = Math.sin(elapsed * 0.65 + motion.phase) * 0.012;
-        if (motion.walkTimer <= 0) {
-          motion.target = (motion.target + 1) % motion.points.length;
-          const target = motion.points[motion.target];
-          motion.route = findWalkPath(character.position, { x: target[0], z: target[2] });
-          motion.pathIndex = 0;
-          motion.walking = true;
-        }
-      }
-    });
-    controls.update();
-    renderer.render(scene, camera);
+    characterGroups.forEach(character=>{const phase=character.userData.phase||0;if(character.userData.statusOrb&&character.userData.statusRing){character.userData.statusOrb.scale.setScalar(1+Math.sin(elapsed*2.7+phase)*0.08);character.userData.statusRing.rotation.z+=delta*0.2;}});
+    controls.update();renderer.render(scene,camera);
   };
   animate();
 
