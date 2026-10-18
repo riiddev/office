@@ -64,6 +64,8 @@ export function createOffice(host, { onSelect } = {}) {
     metal: material('#6d7777', 0.38, { metalness: 0.4 }),
     screen: material('#253d42', 0.3, { emissive: '#6a9d9c', emissiveIntensity: 0.28 }),
     glass: new THREE.MeshStandardMaterial({ color: '#a9c7c0', roughness: 0.15, metalness: 0.1, transparent: true, opacity: 0.33 }),
+    bathTile: material('#e3e8dd', 0.7),
+    poolWater: material('#76bdbb', 0.22, { metalness: 0.16, transparent: true, opacity: 0.92 }),
     lamp: new THREE.MeshStandardMaterial({ color: '#ffdf99', emissive: '#ffc45f', emissiveIntensity: 0.45 }),
     white: material('#fffaf1'),
     navy: material('#384c55'),
@@ -106,7 +108,7 @@ export function createOffice(host, { onSelect } = {}) {
   };
 
   // Floating patch of grass and a slightly raised wooden floor.
-  box(scene, 'garden platform', [29, 0.36, 19], [0, -0.28, 0], mats.grass);
+  box(scene, 'garden platform', [36, 0.36, 29], [0, -0.28, 2], mats.grass);
   box(scene, 'wood floor', [26, 0.22, 15.4], [0, -0.02, 0], mats.floor);
   box(scene, 'front step', [7, 0.22, 0.72], [0, -0.12, 8.05], mats.woodLight);
 
@@ -229,7 +231,7 @@ export function createOffice(host, { onSelect } = {}) {
   cylinder(lamp, 'lamp shade', 0.28, 0.43, 0.42, [0, 2.38, 0], mats.lamp, 12);
 
   // Gaming nook with arcade cabinet and a tiny console screen.
-  const game = group(scene, 'game room', [6.2, 0, 3.5]);
+  const game = group(scene, 'game room', [6.2, 0, 2.7]);
   box(game, 'game rug', [4.8, 0.055, 3.1], [0, 0.12, 0], material('#c6b5a1'));
   for (let i = 0; i < 2; i++) {
     const x = -1.15 + i * 1.7;
@@ -258,6 +260,121 @@ export function createOffice(host, { onSelect } = {}) {
   cylinder(pantry, 'water jug', 0.22, 0.24, 0.58, [1.25, 1.39, -0.2], material('#a9ced0', 0.25, { transparent: true, opacity: 0.78 }), 12);
   cylinder(pantry, 'galon stand', 0.26, 0.26, 0.55, [1.25, 0.62, -0.2], mats.white, 12);
   box(pantry, 'galon tap', [0.16, 0.08, 0.17], [1.25, 0.79, 0.07], mats.navy);
+
+  // Bathroom suite with a real doorway, glass shower, vanity and toilet.
+  const bathroom = group(scene, 'bathroom suite', [-10.5, 0, 3.3]);
+  box(bathroom, 'bathroom tile floor', [4.0, 0.08, 4.1], [0, 0.04, 0], mats.bathTile);
+  box(bathroom, 'bathroom back wall', [4.2, 2.5, 0.16], [0, 1.25, -2.0], mats.wall);
+  box(bathroom, 'bathroom left wall', [0.16, 2.5, 4.1], [-2.02, 1.25, 0], mats.wall);
+  box(bathroom, 'bathroom right wall', [0.16, 2.5, 4.1], [2.02, 1.25, 0], mats.wall);
+  box(bathroom, 'bathroom entry left', [1.15, 2.5, 0.16], [-1.43, 1.25, 1.98], mats.wall);
+  box(bathroom, 'bathroom entry right', [1.15, 2.5, 0.16], [1.43, 1.25, 1.98], mats.wall);
+  // Compact shower cubicle; see-through glass keeps the miniature readable.
+  box(bathroom, 'shower tray', [1.35, 0.12, 1.28], [-1.2, 0.14, -1.18], material('#c5d8d1'));
+  box(bathroom, 'shower rear glass', [1.35, 1.9, 0.045], [-1.2, 1.1, -1.82], mats.glass);
+  box(bathroom, 'shower side glass', [0.045, 1.9, 1.3], [-1.86, 1.1, -1.18], mats.glass);
+  cylinder(bathroom, 'shower head', 0.09, 0.11, 0.09, [-1.68, 2.05, -1.74], mats.metal, 12);
+  cylinder(bathroom, 'shower rail', 0.025, 0.025, 1.2, [-1.7, 1.52, -1.73], mats.metal, 8);
+  // Toilet and cistern.
+  box(bathroom, 'toilet cistern', [0.52, 0.7, 0.28], [0.95, 0.47, -1.37], mats.white);
+  sphere(bathroom, 'toilet bowl', 0.36, [0.95, 0.3, -0.83], mats.white, [0.88, 0.8, 1.05]);
+  cylinder(bathroom, 'toilet seat', 0.28, 0.32, 0.055, [0.95, 0.49, -0.83], mats.metal, 20);
+  // Vanity with a basin and mirror.
+  box(bathroom, 'bathroom vanity', [1.15, 0.72, 0.58], [0.85, 0.48, 0.62], mats.woodLight);
+  box(bathroom, 'bathroom vanity top', [1.27, 0.12, 0.68], [0.85, 0.88, 0.62], mats.white);
+  sphere(bathroom, 'bathroom basin', 0.25, [0.85, 0.96, 0.62], material('#c8d8d2'), [1.35, 0.35, 1]);
+  box(bathroom, 'bathroom mirror frame', [0.92, 1.08, 0.1], [0.85, 1.6, -1.88], mats.wood);
+  box(bathroom, 'bathroom mirror', [0.78, 0.9, 0.035], [0.85, 1.61, -1.815], mats.glass);
+  cylinder(bathroom, 'vanity tap', 0.035, 0.035, 0.22, [0.85, 1.08, 0.38], mats.metal, 8);
+  box(scene, 'bathroom sign', [1.15, 0.34, 0.07], [-10.5, 2.08, 5.22], mats.navy);
+  box(scene, 'bathroom sign inlay', [0.6, 0.035, 0.035], [-10.5, 2.08, 5.17], mats.lamp);
+
+  // Partitioned dining room: dining table, chairs, plates, fruit and a serving counter.
+  const dining = group(scene, 'dining room', [5.15, 0, 6.08]);
+  box(dining, 'dining zone rug', [4.8, 0.06, 3.15], [0, 0.09, 0], material('#d8cbb3'));
+  // Low glass-and-wood partitions leave a clear door from the main aisle.
+  box(dining, 'dining side left lower', [0.16, 1.45, 2.65], [-2.4, 0.75, 0.12], mats.wood);
+  box(dining, 'dining side left glass', [0.055, 0.82, 2.65], [-2.4, 1.86, 0.12], mats.glass);
+  box(dining, 'dining side right lower', [0.16, 1.45, 2.65], [2.4, 0.75, 0.12], mats.wood);
+  box(dining, 'dining side right glass', [0.055, 0.82, 2.65], [2.4, 1.86, 0.12], mats.glass);
+  box(dining, 'dining rear left lower', [1.72, 1.45, 0.16], [-1.53, 0.75, -1.42], mats.wood);
+  box(dining, 'dining rear left glass', [1.72, 0.82, 0.055], [-1.53, 1.86, -1.42], mats.glass);
+  box(dining, 'dining rear right lower', [1.72, 1.45, 0.16], [1.53, 0.75, -1.42], mats.wood);
+  box(dining, 'dining rear right glass', [1.72, 0.82, 0.055], [1.53, 1.86, -1.42], mats.glass);
+  box(dining, 'dining tabletop', [2.15, 0.16, 1.15], [0, 0.93, 0.05], mats.woodLight);
+  for (const x of [-0.88, 0.88]) for (const z of [-0.37, 0.42]) box(dining, 'dining table leg', [0.12, 0.84, 0.12], [x, 0.43, z], mats.darkWood);
+  const diningChairs = [
+    [-1.53, 0.08, 0], [1.53, 0.08, 0], [-0.8, 0.08, -1.0], [0.8, 0.08, -1.0],
+    [-0.8, 0.08, 1.08], [0.8, 0.08, 1.08]
+  ];
+  diningChairs.forEach(([x, y, z], i) => {
+    const seat = group(dining, 'dining chair', [x, y, z]);
+    const fabric = [mats.sofa, mats.terracotta, mats.navy, mats.leaf, mats.fabric, mats.wood][i];
+    box(seat, 'dining chair seat', [0.58, 0.13, 0.55], [0, 0.48, 0], fabric);
+    box(seat, 'dining chair back', [0.58, 0.68, 0.13], [0, 0.84, -0.22], fabric);
+    for (const lx of [-0.22, 0.22]) for (const lz of [-0.2, 0.2]) box(seat, 'dining chair leg', [0.055, 0.43, 0.055], [lx, 0.22, lz], mats.metal);
+  });
+  cylinder(dining, 'dinner plate one', 0.23, 0.24, 0.025, [-0.55, 1.03, 0.05], mats.white, 20);
+  cylinder(dining, 'dinner plate two', 0.23, 0.24, 0.025, [0.55, 1.03, 0.05], mats.white, 20);
+  cylinder(dining, 'fruit bowl', 0.22, 0.29, 0.13, [0, 1.07, -0.24], mats.terracotta, 16);
+  for (let i = 0; i < 4; i++) sphere(dining, 'fruit', 0.08, [-0.12 + (i % 2) * 0.13, 1.18, -0.29 + Math.floor(i / 2) * 0.1], [mats.terracotta, mats.lamp, mats.leaf, mats.cream][i]);
+  box(dining, 'serving sideboard', [1.1, 0.8, 0.54], [1.65, 0.45, -0.85], mats.wood);
+  box(dining, 'serving counter top', [1.18, 0.1, 0.6], [1.65, 0.9, -0.85], mats.cream);
+  addPlant(7.45, 7.0, 0.65);
+
+  // Outdoor pool deck next to the HQ entrance.
+  const poolDeck = group(scene, 'pool deck', [11.35, 0, 10.55]);
+  box(poolDeck, 'pool patio', [8.1, 0.16, 6.0], [0, -0.04, 0], material('#d8c8ab'));
+  box(poolDeck, 'pool basin', [5.15, 0.42, 3.35], [0, 0.17, -0.1], material('#668f96'));
+  box(poolDeck, 'pool water', [4.73, 0.055, 2.92], [0, 0.4, -0.1], mats.poolWater);
+  // Pale coping pieces make the water edge legible in the dollhouse view.
+  box(poolDeck, 'pool coping front', [5.32, 0.12, 0.18], [0, 0.45, 1.57], mats.cream);
+  box(poolDeck, 'pool coping back', [5.32, 0.12, 0.18], [0, 0.45, -1.76], mats.cream);
+  box(poolDeck, 'pool coping left', [0.18, 0.12, 3.3], [-2.57, 0.45, -0.1], mats.cream);
+  box(poolDeck, 'pool coping right', [0.18, 0.12, 3.3], [2.57, 0.45, -0.1], mats.cream);
+  for (let i = 0; i < 4; i++) {
+    const ripple = new THREE.Mesh(new THREE.TorusGeometry(0.18 + i * 0.07, 0.012, 4, 24), material('#b9e5df', 0.25, { transparent: true, opacity: 0.65 }));
+    ripple.rotation.x = -Math.PI / 2;
+    ripple.position.set(-0.85 + i * 0.55, 0.45, -0.3 + (i % 2) * 0.55);
+    ripple.name = 'pool ripple';
+    poolDeck.add(ripple);
+  }
+  // Ladder at the corner.
+  for (let i = 0; i < 2; i++) cylinder(poolDeck, 'pool ladder rail', 0.035, 0.035, 0.95, [2.18 + i * 0.3, 0.73, 1.12], mats.metal, 8);
+  for (let i = 0; i < 3; i++) cylinder(poolDeck, 'pool ladder step', 0.03, 0.03, 0.3, [2.18 + i * 0.15, 0.42 + i * 0.18, 1.12], mats.metal, 8);
+  // Sunbeds and parasol on the dry side, away from the water.
+  for (const x of [-3.15, 3.15]) {
+    const bed = group(poolDeck, 'sun lounger', [x, 0, 0.95]);
+    box(bed, 'lounger cushion', [1.35, 0.13, 0.55], [0, 0.34, 0], mats.fabric);
+    box(bed, 'lounger back', [0.65, 0.1, 0.5], [0, 0.56, -0.2], mats.sofa, { rotation: [-0.18, 0, 0] });
+    for (const lx of [-0.48, 0.48]) box(bed, 'lounger feet', [0.08, 0.28, 0.08], [lx, 0.18, 0], mats.metal);
+  }
+  cylinder(poolDeck, 'parasol pole', 0.035, 0.035, 2.1, [-3.2, 1.05, -1.45], mats.metal, 8);
+  const parasol = cylinder(poolDeck, 'parasol canopy', 0.25, 1.25, 0.38, [-3.2, 2.0, -1.45], material('#dca979'), 16);
+  parasol.scale.z = 1.1;
+  addPlant(15.0, 10.8, 0.8);
+
+  // Low glass partitions divide the studio into quieter work pods while keeping sightlines.
+  const workDividers = [
+    [-5.0, -3.92], [-1.82, -3.92], [1.42, -4.58], [4.56, -4.58], [7.68, -4.58]
+  ];
+  workDividers.forEach(([x, z], i) => {
+    box(scene, 'work pod divider base', [0.11, 0.64, 1.82], [x, 0.36, z], mats.woodLight);
+    box(scene, 'work pod divider glass', [0.045, 0.82, 1.82], [x, 1.09, z], mats.glass);
+  });
+
+  // Glass-and-wood partitions frame the executive room without closing it off.
+  const bossPartitions = group(scene, 'boss office partitions', [-1.65, 0, 3.75]);
+  box(bossPartitions, 'boss rear left partition', [2.05, 1.85, 0.13], [-1.58, 1.0, -2.05], mats.wood);
+  box(bossPartitions, 'boss rear left glass', [2.05, 0.95, 0.045], [-1.58, 2.38, -2.05], mats.glass);
+  box(bossPartitions, 'boss rear right partition', [1.78, 1.85, 0.13], [1.71, 1.0, -2.05], mats.wood);
+  box(bossPartitions, 'boss rear right glass', [1.78, 0.95, 0.045], [1.71, 2.38, -2.05], mats.glass);
+  box(bossPartitions, 'boss side left partition', [0.13, 1.85, 3.85], [-2.62, 1.0, -0.04], mats.wood);
+  box(bossPartitions, 'boss side left glass', [0.045, 0.95, 3.0], [-2.62, 2.38, -0.04], mats.glass);
+  box(bossPartitions, 'boss side right rear partition', [0.13, 1.85, 1.05], [2.62, 1.0, -1.35], mats.wood);
+  box(bossPartitions, 'boss side right rear glass', [0.045, 0.95, 1.05], [2.62, 2.38, -1.35], mats.glass);
+  box(bossPartitions, 'boss side right front partition', [0.13, 1.85, 1.35], [2.62, 1.0, 1.2], mats.wood);
+  box(bossPartitions, 'boss side right front glass', [0.045, 0.95, 1.35], [2.62, 2.38, 1.2], mats.glass);
 
   // A dedicated founder zone: warm rug, executive desk, laptop, guest chairs,
   // and a custom 3D Riiddev avatar based on the supplied character reference.
