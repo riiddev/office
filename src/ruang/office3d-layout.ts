@@ -341,10 +341,14 @@ function upperRoute(from: [number, number], to: [number, number], layout: Office
       const doorLaneX = MUSHOLLA.x + 0.2
       return [[doorLaneX, doorStepZ], [doorLaneX, AISLE_Z]]
     }
-    if (inDiningRoom(point) && point[1] > DINING.z + 0.2) {
-      // Walk away from the chair row before crossing to the side lane, clearing the tabletop.
-      const clearZ = DINING.z + 1.55
-      const sideLaneX = DINING.tableCenters[1] + DINING.length / 2 + 0.55
+    if (inDiningRoom(point)) {
+      // Both rows face the table. Leave each chair toward the table edge first, then turn around
+      // the nearest end of that table; routing straight back would cross the chair's backrest.
+      const tableIndex = point[0] <= (DINING.tableCenters[0] + DINING.tableCenters[1]) / 2 ? 0 : 1
+      const centerX = DINING.tableCenters[tableIndex]
+      const frontSide = point[1] < DINING.z
+      const clearZ = DINING.z + (frontSide ? -1 : 1) * (DINING.width / 2 + 0.18)
+      const sideLaneX = centerX + (tableIndex === 0 ? -1 : 1) * (DINING.length / 2 + 0.8)
       return [[point[0], clearZ], [sideLaneX, clearZ], [sideLaneX, AISLE_Z]]
     }
     return [[point[0], AISLE_Z]]
