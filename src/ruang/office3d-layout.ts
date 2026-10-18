@@ -151,7 +151,7 @@ export function diningSpot(index: number): Placement {
 export function bathroomQueueSpot(index: number): Placement {
   const column = index % 6
   const row = Math.floor(index / 6)
-  return upstairs(7.15 - column * 0.82, -1.55 - row * 0.78, Math.PI, { label: `Bathroom queue · ${index + 1}` })
+  return upstairs(7.15, -1.55 + index * 0.9, Math.PI, { label: `Bathroom queue · ${index + 1}` })
 }
 /** Lying in a bed: feet at the foot end, head on the pillow by the back wall. */
 export const bedSpot = ([x, , z]: Vec3, label?: string): Placement => upstairs(x, z + 0.95, 0, { pose: 'lie', height: 0.5, ...(label ? { label } : {}) })
