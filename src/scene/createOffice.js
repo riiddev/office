@@ -174,6 +174,9 @@ export function createOffice(host, { onSelect } = {}) {
   makeDesk(-6.7, -2.45, '#e8ae77', 'Creative');
   makeDesk(-3.5, -2.45, '#8fc3b5', 'Developer');
   makeDesk(-0.25, -2.45, '#b8a5dd', 'Designer');
+  makeDesk(-6.7, -5.9, '#d9a0ac', 'QA pod');
+  makeDesk(-3.5, -5.9, '#91a4d1', 'Product pod');
+  makeDesk(-0.25, -5.9, '#c4a77b', 'Release pod');
   makeDesk(3.0, -5.9, '#e6b172', 'Research pod');
   makeDesk(6.05, -5.9, '#83a8d3', 'Design pod');
   makeDesk(9.1, -5.9, '#80b6a4', 'Operations pod');
@@ -588,14 +591,29 @@ export function createOffice(host, { onSelect } = {}) {
   const waypoints = [
     [[-7.5, 0, -0.15], [-10.2, 0, -1.8], [-12.2, 0, -2.65], [-10.65, 0, -2.6]],
     [[-4.4, 0, 0.0], [-2.7, 0, 0.0], [-2.7, 0, 1.4], [-4.5, 0, 0.0]],
-    [[2.4, 0, 0.2], [3.0, 0, -0.3], [2.6, 0, 1.6], [2.4, 0, 0.2]],
-    [[9.35, 0, 5.75], [11.2, 0, 5.75], [11.2, 0, 6.35], [9.35, 0, 6.35]],
+    [[4.2, 0, 1.8], [4.2, 0, 2.75], [5.85, 0, 2.75], [5.85, 0, 1.8]],
+    [[3.45, 0, -0.3], [4.2, 0, -0.1], [4.8, 0, 0.4], [3.45, 0, -0.3]],
     [[-7.8, 0, 3.8], [-10.6, 0, 5.3], [-10.6, 0, 5.3], [-7.8, 0, 3.8]],
     [[4.2, 0, 1.8], [4.2, 0, 2.75], [5.85, 0, 2.75], [5.85, 0, 1.8]],
     [[9.1, 0, -3.7], [9.1, 0, -1.2], [9.8, 0, -0.2], [9.1, 0, -3.7]],
-    [[9.4, 0, 6.2], [11.3, 0, 6.2], [13.2, 0, 12.0], [13.2, 0, 14.8]],
-    [[2.0, 0, -0.4], [2.3, 0, -0.2], [2.2, 0, 1.5], [2.0, 0, -0.4]]
+    [[-0.25, 0, -0.52], [-0.25, 0, -0.52], [-0.25, 0, -0.52]],
+    [[9.1, 0, -3.7], [9.1, 0, -1.2], [9.8, 0, -0.2], [9.1, 0, -3.7]]
   ];
+
+  // Explicit home stations turn the office from a random walk into a small
+  // believable workplace: active agents stay by their own workstation, review
+  // agents hold a review pose, and idle agents wander through the social spaces.
+  const movementPlans = {
+    forge: { position: [-6.7, -0.8], face: Math.PI, mode: 'work', stationary: true },
+    scout: { position: [-3.5, -0.8], face: Math.PI, mode: 'review', stationary: true },
+    pixel: { position: [4.2, 1.8], mode: 'wander', points: waypoints[2], target: 1, speed: 0.62 },
+    orbit: { position: [3.45, -0.3], mode: 'wander', points: waypoints[3], target: 1, speed: 0.58 },
+    guard: { position: [-6.7, -4.25], face: Math.PI, mode: 'waiting', stationary: true },
+    nova: { position: [-3.5, -4.25], face: Math.PI, mode: 'work', stationary: true },
+    patch: { position: [3.0, -4.25], face: Math.PI, mode: 'work', stationary: true },
+    muse: { position: [6.05, -4.25], face: Math.PI, mode: 'review', stationary: true },
+    moss: { position: [-0.25, -4.25], face: Math.PI, mode: 'waiting', stationary: true }
+  };
   // Navigation mesh: padded furniture footprints and room partitions. All agents
   // use the same route planner so their paths bend around props instead of
   // walking through desks, chairs, walls, shower fixtures, or pool water.
@@ -627,12 +645,17 @@ export function createOffice(host, { onSelect } = {}) {
     { x1: -8.34, x2: -5.06, z1: -3.5, z2: -0.65 },
     { x1: -5.56, x2: -1.45, z1: -3.5, z2: -0.65 },
     { x1: -2.3, x2: 1.8, z1: -3.5, z2: -0.65 },
+    { x1: -8.34, x2: -5.06, z1: -6.9, z2: -4.1 },
+    { x1: -5.56, x2: -1.45, z1: -6.9, z2: -4.1 },
+    { x1: -2.3, x2: 1.8, z1: -6.9, z2: -4.1 },
     { x1: 1.33, x2: 4.7, z1: -6.9, z2: -4.1 },
     { x1: 4.38, x2: 7.76, z1: -6.9, z2: -4.1 },
     { x1: 7.42, x2: 10.8, z1: -6.9, z2: -4.1 },
     // Glass pod dividers between workstations.
     { x1: -5.12, x2: -4.88, z1: -3.96, z2: -1.96 },
     { x1: -1.94, x2: -1.7, z1: -3.96, z2: -1.96 },
+    { x1: -5.12, x2: -4.88, z1: -6.31, z2: -4.39 },
+    { x1: -1.94, x2: -1.7, z1: -6.31, z2: -4.39 },
     { x1: 1.3, x2: 1.54, z1: -6.31, z2: -4.39 },
     { x1: 4.44, x2: 4.68, z1: -6.31, z2: -4.39 },
     { x1: 7.56, x2: 7.8, z1: -6.31, z2: -4.39 },
@@ -837,17 +860,23 @@ export function createOffice(host, { onSelect } = {}) {
   };
 
   characters.forEach((info, i) => {
-    // Spawn in a verified free cell so characters never begin inside a chair,
-    // divider, or desk footprint before their first route even starts.
-    const requestedSpawn = waypoints[i][0];
-    const spawnCell = nearestWalkableCell({ x: requestedSpawn[0], z: requestedSpawn[2] });
-    const spawnPoint = navPoint(spawnCell.ix, spawnCell.iz);
+    // Working/review agents spawn at a dedicated home station. Wanderers use
+    // a navigation-safe starting cell, so no character appears inside furniture.
+    const plan = movementPlans[info.id];
+    const requestedSpawn = plan?.position ? [plan.position[0], 0, plan.position[1]] : waypoints[i][0];
+    const spawnCell = plan?.stationary || plan?.position
+      ? null
+      : nearestWalkableCell({ x: requestedSpawn[0], z: requestedSpawn[2] });
+    const spawnPoint = plan?.position
+      ? plan.position
+      : navPoint(spawnCell.ix, spawnCell.iz);
     const c = group(scene, 'character-' + info.id, [spawnPoint[0], 0, spawnPoint[1]]);
+    if (Number.isFinite(plan?.face)) c.rotation.y = plan.face;
     c.userData.character = info;
     const skin = material(info.color);
     const shirt = material(info.shirt);
     const hair = material(info.hair);
-    sphere(c, 'head', 0.27, [0, 1.25, 0], skin, [0.88, 1.02, 0.88]);
+    const characterHead = sphere(c, 'head', 0.27, [0, 1.25, 0], skin, [0.88, 1.02, 0.88]);
     sphere(c, 'hair', 0.275, [0, 1.39, -0.035], hair, [0.9, 0.55, 0.9]);
     const characterBody = sphere(c, 'body', 0.28, [0, 0.77, 0], shirt, [0.83, 1.08, 0.62]);
     const armL = group(c, 'left arm pivot', [-0.23, 0.94, 0]);
@@ -873,11 +902,16 @@ export function createOffice(host, { onSelect } = {}) {
     c.add(stateRing);
     c.userData.statusOrb = stateOrb;
     c.userData.statusRing = stateRing;
+    const points = plan?.points || waypoints[i];
+    const target = Math.min(plan?.target ?? 1, points.length - 1);
+    const stationary = Boolean(plan?.stationary);
+    const firstTarget = points[target] || points[0];
     c.userData.motion = {
-      points: waypoints[i], target: 1, speed: 0.92 + (i % 3) * 0.1,
-      phase: i * 1.8, legs: [legL, legR], arms: [armL, armR], body: characterBody,
-      route: findWalkPath(c.position, { x: waypoints[i][1][0], z: waypoints[i][1][2] }),
-      pathIndex: 0, walking: true, walkTimer: 1.2 + i * 0.7
+      points, target, speed: plan?.speed ?? (0.82 + (i % 3) * 0.08),
+      phase: i * 1.8, legs: [legL, legR], arms: [armL, armR], body: characterBody, head: characterHead,
+      route: stationary ? [] : findWalkPath(c.position, { x: firstTarget[0], z: firstTarget[2] }),
+      pathIndex: 0, walking: !stationary, walkTimer: 1.2 + i * 0.7,
+      mode: plan?.mode || 'wander'
     };
     characterGroups.push(c);
   });
@@ -1135,6 +1169,36 @@ export function createOffice(host, { onSelect } = {}) {
         character.userData.statusRing.rotation.z += delta * 0.14;
       }
       if (reducedMotion) return;
+
+      // Stationary characters still feel alive, but no longer roam randomly
+      // away from their assigned activity or clip through a desk to get there.
+      if (motion.mode === 'work' || motion.mode === 'review' || motion.mode === 'waiting') {
+        character.position.y = Math.sin(elapsed * 1.15 + motion.phase) * 0.009;
+        if (motion.head) {
+          motion.head.rotation.y = Math.sin(elapsed * 0.55 + motion.phase) * (motion.mode === 'waiting' ? 0.09 : 0.035);
+          motion.head.rotation.x = Math.sin(elapsed * 0.8 + motion.phase) * 0.022;
+        }
+        motion.legs.forEach((leg) => { leg.rotation.x = 0; leg.rotation.z = 0; });
+        if (motion.mode === 'work') {
+          motion.arms[0].rotation.x = -0.86 + Math.sin(elapsed * 3.2 + motion.phase) * 0.045;
+          motion.arms[1].rotation.x = -0.91 + Math.cos(elapsed * 3.0 + motion.phase) * 0.045;
+          motion.arms[0].rotation.z = -0.045;
+          motion.arms[1].rotation.z = 0.045;
+          if (motion.body) motion.body.rotation.z = Math.sin(elapsed * 2.2 + motion.phase) * 0.012;
+        } else if (motion.mode === 'review') {
+          motion.arms[0].rotation.x = -0.42 + Math.sin(elapsed * 1.8 + motion.phase) * 0.09;
+          motion.arms[1].rotation.x = -0.52 + Math.cos(elapsed * 1.5 + motion.phase) * 0.07;
+          motion.arms[0].rotation.z = -0.08;
+          motion.arms[1].rotation.z = 0.08;
+          if (motion.body) motion.body.rotation.z = Math.sin(elapsed * 0.75 + motion.phase) * 0.012;
+        } else {
+          motion.arms[0].rotation.x = Math.sin(elapsed * 0.7 + motion.phase) * 0.035;
+          motion.arms[1].rotation.x = -Math.sin(elapsed * 0.7 + motion.phase) * 0.035;
+          motion.arms[0].rotation.z = -0.025;
+          motion.arms[1].rotation.z = 0.025;
+        }
+        return;
+      }
 
       if (motion.walking) {
         // Advance across close route nodes before stepping, keeping motion
