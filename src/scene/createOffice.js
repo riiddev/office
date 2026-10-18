@@ -202,16 +202,8 @@ export function createOffice(host, { onSelect } = {}) {
   box(warRoom, 'team screen', [1.78, 1.02, 0.035], [0, 1.82, -1.74], material('#9ed1c0', 0.25, { emissive: '#5b9f8e', emissiveIntensity: 0.38 }));
   addPlant(12.0, 1.8, 0.7);
 
-  // Small reading / meeting table with round poufs.
-  const meeting = group(scene, 'reading corner', [-5.0, 0, -0.25]);
-  cylinder(meeting, 'round tabletop', 1.05, 1.05, 0.16, [0, 0.95, 0], mats.woodLight, 24);
-  cylinder(meeting, 'table leg', 0.13, 0.25, 0.88, [0, 0.47, 0], mats.wood);
-  for (let i = 0; i < 3; i++) {
-    const a = i * Math.PI * 2 / 3;
-    cylinder(meeting, 'pouf', 0.42, 0.43, 0.48, [Math.cos(a) * 1.3, 0.25, Math.sin(a) * 1.3], [mats.terracotta, mats.sofa, mats.fabric][i], 12);
-  }
-  cylinder(meeting, 'plant pot', 0.22, 0.28, 0.28, [0.43, 1.17, -0.05], mats.terracotta);
-  sphere(meeting, 'small plant', 0.26, [0.43, 1.48, -0.05], mats.leafLight, [1, 1.35, 1]);
+  // The old loose pouf/table cluster was removed from the circulation spine.
+  // The lounge and conference room are the dedicated social zones now.
 
   // Cozy lounge: sofa, cushions, coffee table, rug, books and standing lamp.
   const lounge = group(scene, 'lounge', [5.9, 0, -1.35]);
@@ -507,12 +499,13 @@ export function createOffice(host, { onSelect } = {}) {
   // review board -> back to the executive desk.
   const bossRoute = [
     { x: -1.65, z: 4.45, face: Math.PI, activity: 'work', dwell: 7 },
-    { x: 1.8, z: 5.95, face: 0.55, activity: 'walk', dwell: 0 },
-    { x: 10.1, z: 2.7, face: Math.PI, activity: 'meeting', dwell: 6 },
-    { x: 3.8, z: 0.55, face: -0.25, activity: 'lounge', dwell: 5 },
+    { x: 2.5, z: 8.25, face: 0.55, activity: 'walk', dwell: 0 },
+    { x: 2.55, z: 6.35, face: Math.PI, activity: 'dining', dwell: 6 },
+    { x: 10.2, z: 2.6, face: Math.PI, activity: 'meeting', dwell: 6 },
+    { x: 4.0, z: 0.55, face: -0.25, activity: 'lounge', dwell: 5 },
     { x: -4.0, z: 3.7, face: -Math.PI / 2, activity: 'coffee', dwell: 5 },
-    { x: 6.7, z: -6.6, face: 0, activity: 'review', dwell: 5 },
-    { x: 7.4, z: 8.0, face: 0.3, activity: 'pool', dwell: 6 },
+    { x: 10.8, z: -2.8, face: 0, activity: 'review', dwell: 5 },
+    { x: 10.8, z: 12.4, face: 0.3, activity: 'pool', dwell: 6 },
     { x: -1.65, z: 4.45, face: Math.PI, activity: 'work', dwell: 8 }
   ];
   const bossMotion = {
@@ -546,7 +539,7 @@ export function createOffice(host, { onSelect } = {}) {
     [[-7.8, 0, 3.8], [-10.6, 0, 5.3], [-10.6, 0, 5.3], [-7.8, 0, 3.8]],
     [[6.0, 0, 2.8], [6.0, 0, 3.0], [6.2, 0, 2.8], [6.0, 0, 2.8]],
     [[8.4, 0, -2.8], [8.4, 0, -2.3], [8.4, 0, -2.8], [9.1, 0, -2.3]],
-    [[9.4, 0, 3.2], [11.8, 0, 6.6], [14.6, 0, 8.3], [9.4, 0, 3.2]],
+    [[9.4, 0, 3.2], [9.4, 0, 6.2], [2.5, 0, 8.25], [2.5, 0, 6.15]],
     [[2.0, 0, -0.4], [2.3, 0, -0.2], [2.2, 0, 1.5], [2.0, 0, -0.4]]
   ];
   // Navigation mesh: padded furniture footprints and room partitions. All agents
@@ -578,7 +571,6 @@ export function createOffice(host, { onSelect } = {}) {
     { x1: 4.44, x2: 4.68, z1: -6.31, z2: -4.39 },
     { x1: 7.56, x2: 7.8, z1: -6.31, z2: -4.39 },
     // Reading nook, bookcase, lounge, and arcade room.
-    { x1: -1.95, x2: 1.2, z1: -2.0, z2: 1.25 },
     { x1: -9.16, x2: -8.04, z1: -3.08, z2: -0.12 },
     // Actual lounge furniture footprints leave an aisle beside the sofa.
     { x1: 3.86, x2: 7.92, z1: -3.1, z2: -0.92 },
@@ -630,7 +622,11 @@ export function createOffice(host, { onSelect } = {}) {
   const navBlockedAt = (x, z) => {
     if (x < navMinX || x > navMaxX || z < navMinZ || z > navMaxZ) return true;
     if (z < 10.0 && (x < -12.48 || x > 12.48)) return true;
-    return navBlockers.some((r) => x >= r.x1 && x <= r.x2 && z >= r.z1 && z <= r.z2);
+    const clearance = 0.22;
+    return navBlockers.some((r) =>
+      x >= r.x1 - clearance && x <= r.x2 + clearance &&
+      z >= r.z1 - clearance && z <= r.z2 + clearance
+    );
   };
   const navIndex = (ix, iz) => iz * navWidth + ix;
   const navPoint = (ix, iz) => [navMinX + ix * navStep, navMinZ + iz * navStep];
@@ -841,8 +837,8 @@ export function createOffice(host, { onSelect } = {}) {
   let isNight = false;
   const setNight = (night) => {
     isNight = Boolean(night);
-    const sky = isNight ? '#292e3f' : '#e8e8d8';
-    const fog = isNight ? '#292e3f' : '#e8e8d8';
+    const sky = isNight ? '#292e3f' : '#d8d9cc';
+    const fog = isNight ? '#292e3f' : '#d8d9cc';
     gsap.to(scene.background, { r: new THREE.Color(sky).r, g: new THREE.Color(sky).g, b: new THREE.Color(sky).b, duration: 0.65 });
     if (scene.fog) {
       scene.fog.color.set(fog);
@@ -1029,6 +1025,10 @@ export function createOffice(host, { onSelect } = {}) {
             arm.rotation.x = side > 0 ? -0.55 + Math.sin(rest * 2.0) * 0.12 : -0.18;
             arm.rotation.z = side * (side > 0 ? 0.32 : 0.07);
             bossHead.rotation.y = Math.sin(rest * 0.9) * 0.07;
+          } else if (bossMotion.activity === 'dining') {
+            arm.rotation.x = side > 0 ? -1.08 + Math.sin(rest * 1.6) * 0.06 : -0.08 + Math.sin(rest * 0.9) * 0.025;
+            arm.rotation.z = side > 0 ? -0.18 : 0.04;
+            bossHead.rotation.x = side > 0 ? -0.08 : 0;
           } else if (bossMotion.activity === 'pool') {
             arm.rotation.x = -0.12 + Math.sin(rest * 0.8 + side) * 0.08;
             arm.rotation.z = side * (0.2 + Math.sin(rest * 0.6) * 0.08);
