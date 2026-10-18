@@ -494,17 +494,18 @@ export function createOffice(host, { onSelect } = {}) {
   // review board -> back to the executive desk.
   const bossRoute = [
     { x: -1.65, z: 4.45, face: Math.PI, activity: 'work', dwell: 7 },
-    { x: -1.65, z: 1.65, face: 0.15, activity: 'walk', dwell: 0 },
-    { x: 3.4, z: 1.0, face: 0.75, activity: 'walk', dwell: 0 },
-    { x: 8.35, z: 1.05, face: 2.6, activity: 'meeting', dwell: 6 },
-    { x: 5.8, z: 0.25, face: 0.2, activity: 'lounge', dwell: 5 },
-    { x: 1.0, z: 1.25, face: -1.1, activity: 'walk', dwell: 0 },
-    { x: -4.8, z: 2.0, face: -Math.PI / 2, activity: 'coffee', dwell: 5 },
-    { x: -7.4, z: -1.4, face: -0.15, activity: 'review', dwell: 5 },
-    { x: -4.2, z: 0.7, face: 0.7, activity: 'walk', dwell: 0 },
+    { x: 1.8, z: 5.95, face: 0.55, activity: 'walk', dwell: 0 },
+    { x: 10.1, z: 2.7, face: Math.PI, activity: 'meeting', dwell: 6 },
+    { x: 3.4, z: 1.3, face: -0.25, activity: 'lounge', dwell: 5 },
+    { x: -4.0, z: 3.7, face: -Math.PI / 2, activity: 'coffee', dwell: 5 },
+    { x: 6.7, z: -6.6, face: 0, activity: 'review', dwell: 5 },
+    { x: 7.4, z: 8.0, face: 0.3, activity: 'pool', dwell: 6 },
     { x: -1.65, z: 4.45, face: Math.PI, activity: 'work', dwell: 8 }
   ];
-  const bossMotion = { target: 0, walking: false, wait: bossRoute[0].dwell, activity: bossRoute[0].activity, phase: 1.4, stepRate: 8.5 };
+  const bossMotion = {
+    target: 0, walking: false, wait: bossRoute[0].dwell, activity: bossRoute[0].activity,
+    phase: 1.4, stepRate: 9.6, route: [], pathIndex: 0
+  };
 
   // Desk-side bookcase and colorful books.
   const shelf = group(scene, 'bookcase', [-8.6, 0, -1.6]);
@@ -885,23 +886,8 @@ export function createOffice(host, { onSelect } = {}) {
       const bossWave = elapsed * bossMotion.stepRate + bossMotion.phase;
       if (bossMotion.walking) {
         const waypoint = bossRoute[bossMotion.target];
-        const dx = waypoint.x - bossRoot.position.x;
-        const dz = waypoint.z - bossRoot.position.z;
-        const distance = Math.hypot(dx, dz);
-        if (distance > 0.1) {
-          const step = Math.min(1.25 * delta, distance);
-          bossRoot.position.x += (dx / distance) * step;
-          bossRoot.position.z += (dz / distance) * step;
-          bossRoot.rotation.y = Math.atan2(dx, dz);
-          const stride = Math.sin(bossWave) * 0.56;
-          bossLegs[0].rotation.x = stride;
-          bossLegs[1].rotation.x = -stride;
-          bossArms.forEach(({ group: arm, side }) => {
-            arm.rotation.x = -Math.sin(bossWave) * 0.3;
-            arm.rotation.z = side * Math.sin(bossWave) * 0.08;
-          });
-          bossRoot.position.y = Math.abs(Math.sin(bossWave)) * 0.055;
-        } else {
+        const pathPoint = bossMotion.route[bossMotion.pathIndex];
+        if (!pathPoint) {
           bossRoot.position.x = waypoint.x;
           bossRoot.position.z = waypoint.z;
           bossRoot.rotation.y = waypoint.face;
@@ -909,12 +895,54 @@ export function createOffice(host, { onSelect } = {}) {
           bossMotion.walking = false;
           bossMotion.activity = waypoint.activity;
           bossMotion.wait = waypoint.dwell;
-          bossLegs.forEach((leg) => { leg.rotation.x = 0; leg.rotation.z = 0; });
+        } else {
+          const dx = pathPoint[0] - bossRoot.position.x;
+          const dz = pathPoint[1] - bossRoot.position.z;
+          const distance = Math.hypot(dx, dz);
+          if (distance < 0.16) {
+            if (bossMotion.pathIndex < bossMotion.route.length - 1) {
+              bossMotion.pathIndex++;
+            } else {
+              bossRoot.position.x = pathPoint[0];
+              bossRoot.position.z = pathPoint[1];
+              bossRoot.rotation.y = waypoint.face;
+              bossRoot.position.y = 0;
+              bossMotion.walking = false;
+              bossMotion.activity = waypoint.activity;
+              bossMotion.wait = waypoint.dwell;
+              bossLegs.forEach((leg) => { leg.rotation.x = 0; leg.rotation.z = 0; });
+            }
+          } else {
+            const desiredAngle = Math.atan2(dx, dz);
+            const angleDelta = Math.atan2(
+              Math.sin(desiredAngle - bossRoot.rotation.y),
+              Math.cos(desiredAngle - bossRoot.rotation.y)
+            );
+            bossRoot.rotation.y += angleDelta * Math.min(1, delta * 6.2);
+            const ease = THREE.MathUtils.clamp(distance * 1.7, 0.25, 1);
+            const step = Math.min(1.45 * delta * ease, distance);
+            bossRoot.position.x += (dx / distance) * step;
+            bossRoot.position.z += (dz / distance) * step;
+            const stride = Math.sin(bossWave) * 0.58;
+            bossLegs[0].rotation.x = stride;
+            bossLegs[1].rotation.x = -stride;
+            bossLegs[0].rotation.z = Math.cos(bossWave) * 0.035;
+            bossLegs[1].rotation.z = -Math.cos(bossWave) * 0.035;
+            bossArms.forEach(({ group: arm, side }) => {
+              arm.rotation.x = -Math.sin(bossWave) * 0.34;
+              arm.rotation.z = side * Math.sin(bossWave) * 0.07;
+            });
+            bossRoot.position.y = Math.abs(Math.sin(bossWave)) * 0.06;
+            bossHead.rotation.y = Math.sin(elapsed * 0.75) * 0.04;
+          }
         }
-      } else {
+      }      } else {
         bossMotion.wait = Math.max(0, bossMotion.wait - delta);
         if (bossMotion.wait <= 0) {
           bossMotion.target = (bossMotion.target + 1) % bossRoute.length;
+          const next = bossRoute[bossMotion.target];
+          bossMotion.route = findWalkPath(bossRoot.position, { x: next.x, z: next.z });
+          bossMotion.pathIndex = 0;
           bossMotion.walking = true;
           bossMotion.activity = 'walk';
         }
@@ -949,6 +977,11 @@ export function createOffice(host, { onSelect } = {}) {
             arm.rotation.x = side > 0 ? -0.55 + Math.sin(rest * 2.0) * 0.12 : -0.18;
             arm.rotation.z = side * (side > 0 ? 0.32 : 0.07);
             bossHead.rotation.y = Math.sin(rest * 0.9) * 0.07;
+          } else if (bossMotion.activity === 'pool') {
+            arm.rotation.x = -0.12 + Math.sin(rest * 0.8 + side) * 0.08;
+            arm.rotation.z = side * (0.2 + Math.sin(rest * 0.6) * 0.08);
+            bossHead.rotation.y = Math.sin(rest * 0.55) * 0.11;
+            bossHead.rotation.x = Math.sin(rest * 0.8) * 0.025;
           }
         });
       }
