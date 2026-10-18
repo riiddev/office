@@ -30,7 +30,7 @@ const seedOf = (id: string) => { let hash = 0; for (let index = 0; index < id.le
 const smooth = (edge0: number, edge1: number, value: number) => { const x = Math.min(1, Math.max(0, (value - edge0) / (edge1 - edge0))); return x * x * (3 - 2 * x) }
 const WALK_SPEED = 1.55
 
-function Character({ station, placement, layout, floor, onSelect, anchor, prayerSessionStart, prayerCycleDuration, onPrayerReady }: { station: OfficeStation & { routineStop?: DailyStop }; placement: Placement; layout: OfficeLayout; floor: Floor; onSelect: (station: OfficeStation, trigger: HTMLElement | null) => void; anchor: (object: THREE.Object3D | null) => void; prayerSessionStart: number; prayerCycleDuration: number; onPrayerReady: (id: string) => void }) {
+function Character({ station, placement, layout, floor, onSelect, anchor, prayerSessionStart, prayerCycleDuration, simulationRate, onPrayerReady }: { station: OfficeStation & { routineStop?: DailyStop }; placement: Placement; layout: OfficeLayout; floor: Floor; onSelect: (station: OfficeStation, trigger: HTMLElement | null) => void; anchor: (object: THREE.Object3D | null) => void; prayerSessionStart: number; prayerCycleDuration: number; simulationRate: number; onPrayerReady: (id: string) => void }) {
   const root = useRef<THREE.Group>(null)
   const body = useRef<THREE.Group>(null)
   const torso = useRef<THREE.Group>(null)
@@ -52,6 +52,8 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
   const prayerReadyReported = useRef(false)
   const destination = placement.position.join(',')
   const seed = useMemo(() => seedOf(station.id), [station.id])
+  // The clock advances 120 game-seconds per real second at 120×. Scale motion only above
+  // the 60× default so a compressed schedule still has time to walk between rooms.
   // Everything animated is eased towards its target each frame, so no pose ever snaps.
   const pose = useRef((() => {
     // Start already in the initial pose (seated, on the floor, in bed) instead of easing into it on load.
@@ -110,7 +112,7 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
         const turn = Math.abs(angleTo(group.rotation.y, heading))
         // Ease in from rest, ease out towards the final spot, and slow for sharp turns instead of sliding sideways.
         const approach = finalLeg ? 0.35 + distance * 1.6 : 1
-        const target = WALK_SPEED * Math.min(1, approach) * (1 - Math.min(0.7, turn / 2.2))
+        const target = WALK_SPEED * Math.max(1, simulationRate / 60) * Math.min(1, approach) * (1 - Math.min(0.7, turn / 2.2))
         s.speed = damp(s.speed, target, target > s.speed ? 4 : 7, delta)
         const step = Math.min(distance, s.speed * delta)
         scratch.move.normalize().multiplyScalar(step)
@@ -196,7 +198,7 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
     const talking = station.state === 'Collaborating' && !walking && s.lie < 0.5
     const gait = Math.min(1, s.speed / 1.2)
     const stride = Math.sin(s.phase) * 0.62 * gait
-    const t = time + seed * 7
+    const t = time * Math.max(1, simulationRate / 60) + seed * 7
     // Keystrokes: irregular little bursts, with pauses where the agent reads the screen or thinks.
     const think = smooth(0.55, 0.9, Math.sin(t * 0.21) * Math.sin(t * 0.07 + 1.3) + 0.35)
     const tapL = Math.max(0, Math.sin(t * 17.3)) * (0.55 + 0.45 * Math.sin(t * 4.9)) * (1 - think)
@@ -870,7 +872,7 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
       <Lighting theme={theme}/>
       <Environment night={theme === 'dark'} layout={layout} floor={floor}/>
       {floor === 1 && layout.desks.map((position, index) => <WorkDesk key={index} position={position} active={occupiedSeats.has(index + 1)} withChair/>)}
-      {stations.map((station) => <Character key={station.id} station={station} placement={placement(station)} layout={layout} floor={floor} onSelect={onSelect} prayerSessionStart={prayerSessionStart} prayerCycleDuration={prayerCycleDuration} onPrayerReady={onPrayerReady} anchor={register(anchors, `agent-${station.id}`)}/>)}
+      {stations.map((station) => <Character key={station.id} station={station} placement={placement(station)} layout={layout} floor={floor} onSelect={onSelect} prayerSessionStart={prayerSessionStart} prayerCycleDuration={prayerCycleDuration} simulationRate={simulationRate} onPrayerReady={onPrayerReady} anchor={register(anchors, `agent-${station.id}`)}/>)}
       <LabelProjector anchors={anchors} labels={labels}/>
       <Controls key={layout.deskCount} ref={view} panMode={panMode} keyTarget={keyTarget} layout={layout} elevation={floor === 2 ? FLOOR_HEIGHT : 0}/>
     </Canvas>
