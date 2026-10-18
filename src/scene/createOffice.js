@@ -178,6 +178,53 @@ export function createOffice(host, { onSelect } = {}) {
   makeDesk(6.05, -5.9, '#83a8d3', 'Design pod');
   makeDesk(9.1, -5.9, '#80b6a4', 'Operations pod');
 
+  // New west wing: enclosed focus studio / library with its own furniture.
+  // A broad doorway stays open on the east side so both coworkers and boss can enter.
+  const focusStudio = group(scene, 'focus studio wing', [-13.1, 0, -2.4]);
+  box(focusStudio, 'focus studio rug', [5.15, 0.06, 5.35], [0, 0.08, 0], material('#c8b69a'));
+  box(focusStudio, 'focus studio back wall', [5.45, 2.5, 0.15], [0, 1.25, -2.75], mats.wall);
+  box(focusStudio, 'focus studio left wall', [0.15, 2.5, 5.45], [-2.68, 1.25, 0], mats.wall);
+  box(focusStudio, 'focus studio east wall upper left', [0.15, 2.5, 1.1], [2.68, 1.25, -2.2], mats.wall);
+  box(focusStudio, 'focus studio east wall upper right', [0.15, 2.5, 1.1], [2.68, 1.25, 2.2], mats.wall);
+  box(focusStudio, 'focus studio south wall left', [1.25, 2.3, 0.15], [-2.05, 1.15, 2.68], mats.wall);
+  box(focusStudio, 'focus studio south wall right', [1.25, 2.3, 0.15], [2.05, 1.15, 2.68], mats.wall);
+  box(focusStudio, 'focus studio door lintel', [0.16, 0.18, 3.3], [2.68, 2.44, 0], mats.woodLight);
+
+  // Built-in bookcases, repeated spines and a proper reading / planning table.
+  for (const shelfX of [-1.55, 1.55]) {
+    box(focusStudio, 'library bookcase frame', [1.05, 1.95, 0.42], [shelfX, 1.02, -2.15], mats.wood);
+    for (let row = 0; row < 3; row++) {
+      box(focusStudio, 'bookcase shelf', [0.96, 0.07, 0.45], [shelfX, 0.5 + row * 0.58, -1.9], mats.woodLight);
+      for (let book = 0; book < 5; book++) {
+        const colors = [mats.terracotta, mats.leaf, mats.navy, mats.lamp, mats.fabric];
+        box(focusStudio, 'book spine', [0.12, 0.31 + (book % 2) * 0.06, 0.17],
+          [shelfX - 0.36 + book * 0.18, 0.69 + row * 0.58, -1.88], colors[(book + row) % colors.length]);
+      }
+    }
+  }
+  box(focusStudio, 'focus studio worktable', [1.75, 0.14, 0.9], [-0.8, 0.94, 0.15], mats.woodLight);
+  for (const x of [-1.48, -0.12]) for (const z of [-0.15, 0.45]) {
+    box(focusStudio, 'focus table leg', [0.08, 0.86, 0.08], [x, 0.43, z], mats.darkWood);
+  }
+  box(focusStudio, 'open notebook', [0.48, 0.035, 0.34], [-0.9, 1.035, 0.12], mats.cream);
+  box(focusStudio, 'notebook page line', [0.3, 0.012, 0.018], [-0.9, 1.06, 0.12], mats.terracotta);
+  box(focusStudio, 'table lamp base', [0.22, 0.06, 0.22], [-0.2, 1.06, 0.15], mats.metal);
+  cylinder(focusStudio, 'table lamp stem', 0.025, 0.025, 0.28, [-0.2, 1.21, 0.15], mats.metal, 8);
+  cylinder(focusStudio, 'table lamp shade', 0.13, 0.2, 0.15, [-0.2, 1.39, 0.15], mats.lamp, 10);
+  const focusChair = group(focusStudio, 'focus studio chair', [-0.8, 0, 1.12]);
+  box(focusChair, 'focus chair seat', [0.62, 0.14, 0.58], [0, 0.55, 0], mats.sofa);
+  box(focusChair, 'focus chair back', [0.62, 0.66, 0.14], [0, 0.91, 0.22], mats.sofa);
+  cylinder(focusChair, 'focus chair stem', 0.055, 0.055, 0.45, [0, 0.27, 0], mats.metal, 8);
+  addPlant(-10.9, -4.45, 0.6);
+  box(scene, 'focus studio sign', [2.15, 0.38, 0.08], [-13.1, 2.68, -5.22], mats.navy);
+  box(scene, 'focus studio sign highlight', [1.1, 0.035, 0.035], [-13.1, 2.69, -5.16], mats.lamp);
+
+  // Extra landscaping around the enlarged site edges.
+  addPlant(-20.0, -5.8, 1.25);
+  addPlant(-20.2, 4.8, 1.1);
+  addPlant(22.0, 6.5, 1.2);
+  addPlant(22.1, 19.0, 1.15);
+
   // A shared wall board for sprint notes and a room-wide planning surface.
   box(scene, 'sprint board frame', [4.2, 1.85, 0.16], [6.7, 2.45, -7.4], mats.wood);
   box(scene, 'sprint board', [3.95, 1.6, 0.045], [6.7, 2.45, -7.29], mats.cream);
