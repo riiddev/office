@@ -297,13 +297,15 @@ export function createOffice(host, { onSelect } = {}) {
   const cableMat = material('#fffdf9', 0.38);
   const goldMat = material('#d9b46e', 0.42, { metalness: 0.25 });
   sphere(bossRoot, 'boss pants waist', 0.28, [0, 0.61, 0], bossPants, [1.25, 0.48, 0.9]);
-  sphere(bossRoot, 'boss left trouser', 0.22, [-0.155, 0.34, 0], bossPants, [0.72, 1.38, 0.78]);
-  sphere(bossRoot, 'boss right trouser', 0.22, [0.155, 0.34, 0], bossPants, [0.72, 1.38, 0.78]);
-  for (const x of [-0.155, 0.155]) {
-    sphere(bossRoot, 'sneaker sole', 0.15, [x, 0.055, 0.115], bossSole, [1.0, 0.34, 1.55]);
-    sphere(bossRoot, 'black sneaker', 0.15, [x, 0.11, 0.105], bossShoes, [1.0, 0.58, 1.45]);
-    sphere(bossRoot, 'white sneaker toe', 0.1, [x, 0.115, 0.255], bossSole, [1.0, 0.78, 0.9]);
-    for (let lace = 0; lace < 2; lace++) box(bossRoot, 'sneaker lace', [0.09, 0.012, 0.018], [x, 0.16 + lace * 0.025, 0.17 + lace * 0.055], bossSole);
+  const bossLegs = [];
+  for (const side of [-1, 1]) {
+    const leg = group(bossRoot, side < 0 ? 'boss left walking leg' : 'boss right walking leg', [side * 0.155, 0.52, 0]);
+    sphere(leg, 'cream trouser', 0.22, [0, -0.18, 0], bossPants, [0.72, 1.38, 0.78]);
+    sphere(leg, 'sneaker sole', 0.15, [0, -0.465, 0.115], bossSole, [1.0, 0.34, 1.55]);
+    sphere(leg, 'black sneaker', 0.15, [0, -0.41, 0.105], bossShoes, [1.0, 0.58, 1.45]);
+    sphere(leg, 'white sneaker toe', 0.1, [0, -0.405, 0.255], bossSole, [1.0, 0.78, 0.9]);
+    for (let lace = 0; lace < 2; lace++) box(leg, 'sneaker lace', [0.09, 0.012, 0.018], [0, -0.36 + lace * 0.025, 0.17 + lace * 0.055], bossSole);
+    bossLegs.push(leg);
   }
   sphere(bossRoot, 'white tee', 0.37, [0, 0.96, 0.005], bossShirt, [0.83, 1.13, 0.74]);
   sphere(bossRoot, 'navy jacket body', 0.39, [0, 0.98, -0.005], bossJacket, [1.05, 1.08, 0.72]);
@@ -311,11 +313,14 @@ export function createOffice(host, { onSelect } = {}) {
   box(bossRoot, 'left jacket front', [0.16, 0.62, 0.05], [-0.185, 0.96, 0.265], bossJacket, { rotation: [0, 0, -0.08] });
   box(bossRoot, 'right jacket front', [0.16, 0.62, 0.05], [0.185, 0.96, 0.265], bossJacket, { rotation: [0, 0, 0.08] });
   box(bossRoot, 'jacket zipper', [0.018, 0.48, 0.018], [0, 0.92, 0.305], goldMat);
+  const bossArms = [];
   for (const side of [-1, 1]) {
-    sphere(bossRoot, 'jacket shoulder', 0.18, [side * 0.37, 1.17, -0.005], bossJacket, [0.95, 0.92, 0.95]);
-    sphere(bossRoot, 'jacket sleeve', 0.16, [side * 0.405, 0.91, 0.035], bossJacket, [0.78, 1.5, 0.78]);
-    sphere(bossRoot, 'jacket cuff', 0.11, [side * 0.32, 0.68, 0.14], bossJacket, [0.9, 0.72, 0.85]);
-    sphere(bossRoot, 'boss hand', 0.105, [side * 0.255, 0.59, 0.205], bossSkin, [0.92, 1.0, 0.8]);
+    const arm = group(bossRoot, side < 0 ? 'boss left animated arm' : 'boss right animated arm', [side * 0.35, 1.12, 0.02]);
+    sphere(arm, 'jacket shoulder', 0.18, [side * 0.02, 0.05, -0.025], bossJacket, [0.95, 0.92, 0.95]);
+    sphere(arm, 'jacket sleeve', 0.16, [side * 0.055, -0.21, 0.015], bossJacket, [0.78, 1.5, 0.78]);
+    sphere(arm, 'jacket cuff', 0.11, [-side * 0.03, -0.44, 0.12], bossJacket, [0.9, 0.72, 0.85]);
+    sphere(arm, 'boss hand', 0.105, [-side * 0.095, -0.53, 0.185], bossSkin, [0.92, 1.0, 0.8]);
+    bossArms.push({ group: arm, side });
   }
   const bossHead = group(bossRoot, 'boss animated head', [0, 0, 0]);
   sphere(bossHead, 'hair silhouette', 0.38, [0, 1.78, -0.02], bossHair, [1.04, 0.94, 0.94]);
@@ -366,6 +371,23 @@ export function createOffice(host, { onSelect } = {}) {
     const tip = cylinder(bossRoot, 'boss crown detail', 0.025, 0.07, 0.12, [(spike - 1) * 0.12, 2.23, 0], goldMat, 6);
     tip.rotation.z = (spike - 1) * -0.18;
   }
+
+  // Boss has a real activity loop, not a decorative idle animation:
+  // desk work -> walk the aisle -> team meeting -> lounge break -> coffee ->
+  // review board -> back to the executive desk.
+  const bossRoute = [
+    { x: -1.65, z: 4.45, face: Math.PI, activity: 'work', dwell: 7 },
+    { x: -1.65, z: 1.65, face: 0.15, activity: 'walk', dwell: 0 },
+    { x: 3.4, z: 1.0, face: 0.75, activity: 'walk', dwell: 0 },
+    { x: 8.35, z: 1.05, face: 2.6, activity: 'meeting', dwell: 6 },
+    { x: 5.8, z: 0.25, face: 0.2, activity: 'lounge', dwell: 5 },
+    { x: 1.0, z: 1.25, face: -1.1, activity: 'walk', dwell: 0 },
+    { x: -4.8, z: 2.0, face: -Math.PI / 2, activity: 'coffee', dwell: 5 },
+    { x: -7.4, z: -1.4, face: -0.15, activity: 'review', dwell: 5 },
+    { x: -4.2, z: 0.7, face: 0.7, activity: 'walk', dwell: 0 },
+    { x: -1.65, z: 4.45, face: Math.PI, activity: 'work', dwell: 8 }
+  ];
+  const bossMotion = { target: 0, walking: false, wait: bossRoute[0].dwell, activity: bossRoute[0].activity, phase: 1.4, stepRate: 8.5 };
 
   // Desk-side bookcase and colorful books.
   const shelf = group(scene, 'bookcase', [-8.6, 0, -1.6]);
@@ -518,9 +540,76 @@ export function createOffice(host, { onSelect } = {}) {
     const delta = Math.min(clock.getDelta(), 0.04);
     const elapsed = clock.elapsedTime;
     if (!reducedMotion) {
-      bossRoot.position.y = Math.sin(elapsed * 1.25) * 0.018;
-      bossHead.rotation.y = Math.sin(elapsed * 0.55) * 0.045;
-      bossHead.rotation.z = Math.sin(elapsed * 0.8) * 0.012;
+      const bossWave = elapsed * bossMotion.stepRate + bossMotion.phase;
+      if (bossMotion.walking) {
+        const waypoint = bossRoute[bossMotion.target];
+        const dx = waypoint.x - bossRoot.position.x;
+        const dz = waypoint.z - bossRoot.position.z;
+        const distance = Math.hypot(dx, dz);
+        if (distance > 0.1) {
+          const step = Math.min(1.25 * delta, distance);
+          bossRoot.position.x += (dx / distance) * step;
+          bossRoot.position.z += (dz / distance) * step;
+          bossRoot.rotation.y = Math.atan2(dx, dz);
+          const stride = Math.sin(bossWave) * 0.56;
+          bossLegs[0].rotation.x = stride;
+          bossLegs[1].rotation.x = -stride;
+          bossArms.forEach(({ group: arm, side }) => {
+            arm.rotation.x = -Math.sin(bossWave) * 0.3;
+            arm.rotation.z = side * Math.sin(bossWave) * 0.08;
+          });
+          bossRoot.position.y = Math.abs(Math.sin(bossWave)) * 0.055;
+        } else {
+          bossRoot.position.x = waypoint.x;
+          bossRoot.position.z = waypoint.z;
+          bossRoot.rotation.y = waypoint.face;
+          bossRoot.position.y = 0;
+          bossMotion.walking = false;
+          bossMotion.activity = waypoint.activity;
+          bossMotion.wait = waypoint.dwell;
+          bossLegs.forEach((leg) => { leg.rotation.x = 0; leg.rotation.z = 0; });
+        }
+      } else {
+        bossMotion.wait = Math.max(0, bossMotion.wait - delta);
+        if (bossMotion.wait <= 0) {
+          bossMotion.target = (bossMotion.target + 1) % bossRoute.length;
+          bossMotion.walking = true;
+          bossMotion.activity = 'walk';
+        }
+
+        // Distinct readable poses while the boss pauses at each destination.
+        const rest = elapsed * 1.7 + bossMotion.phase;
+        bossRoot.position.y = Math.sin(elapsed * 1.15) * 0.012;
+        bossHead.rotation.y = Math.sin(elapsed * 0.55) * 0.045;
+        bossHead.rotation.z = Math.sin(elapsed * 0.8) * 0.012;
+        bossLegs[0].rotation.x = 0;
+        bossLegs[1].rotation.x = 0;
+        bossArms.forEach(({ group: arm, side }) => {
+          arm.rotation.x = 0;
+          arm.rotation.z = 0;
+          if (bossMotion.activity === 'work') {
+            arm.rotation.x = -0.88 + Math.sin(rest * 2.8 + side) * 0.035;
+            arm.rotation.z = side * 0.045;
+            bossHead.rotation.x = Math.sin(rest * 1.5) * 0.035;
+          } else if (bossMotion.activity === 'meeting') {
+            arm.rotation.x = -0.42 + Math.sin(rest * 2.2 + side) * 0.14;
+            arm.rotation.z = side * (0.27 + Math.sin(rest * 1.8) * 0.08);
+            bossHead.rotation.y = Math.sin(rest * 1.1) * 0.12;
+          } else if (bossMotion.activity === 'coffee') {
+            arm.rotation.x = side > 0 ? -1.35 + Math.sin(rest * 1.4) * 0.06 : -0.08;
+            arm.rotation.z = side > 0 ? -0.2 : -0.02;
+            bossHead.rotation.x = side > 0 ? -0.09 : 0;
+          } else if (bossMotion.activity === 'lounge') {
+            arm.rotation.x = Math.sin(rest * 0.75 + side) * 0.05;
+            arm.rotation.z = side * 0.11;
+            bossHead.rotation.x = Math.sin(rest * 0.7) * 0.025;
+          } else if (bossMotion.activity === 'review') {
+            arm.rotation.x = side > 0 ? -0.55 + Math.sin(rest * 2.0) * 0.12 : -0.18;
+            arm.rotation.z = side * (side > 0 ? 0.32 : 0.07);
+            bossHead.rotation.y = Math.sin(rest * 0.9) * 0.07;
+          }
+        });
+      }
       plantLeaves.forEach(({ leaf, phase }) => {
         leaf.rotation.z = Math.sin(elapsed * 0.55 + phase) * 0.045;
         leaf.rotation.x = Math.cos(elapsed * 0.42 + phase) * 0.025;
