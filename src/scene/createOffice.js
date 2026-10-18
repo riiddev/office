@@ -525,16 +525,229 @@ export function createOffice(host, { onSelect } = {}) {
   // Characters are deliberately simple toy-like figures; their wandering is decorative.
   const characterGroups = [];
   const waypoints = [
-    [[-7.2, 0, -1.6], [-5.3, 0, -0.5], [-3.6, 0, -1.1], [-7.8, 0, 1.3]],
-    [[-3.8, 0, -1.55], [-1.6, 0, -0.4], [1.0, 0, -1.15], [-4.8, 0, 1.1]],
-    [[1.5, 0, -1.8], [2.1, 0, 1.0], [5.0, 0, 1.1], [3.1, 0, -1.25]],
-    [[7.7, 0, 0.6], [8.7, 0, -1.2], [10.7, 0, -0.8], [9.0, 0, 1.8]],
-    [[-9.0, 0, 1.8], [-7.2, 0, 3.4], [-8.6, 0, 4.5], [-10.3, 0, 2.2]],
-    [[3.0, 0, -3.1], [4.0, 0, -2.7], [6.5, 0, -2.8], [5.0, 0, -3.3]],
-    [[6.1, 0, -2.8], [7.4, 0, -1.8], [8.5, 0, -2.8], [6.0, 0, -3.4]],
-    [[8.8, 0, 2.0], [10.8, 0, 2.5], [11.6, 0, 0.5], [9.1, 0, -1.1]],
-    [[-1.8, 0, -2.2], [0.2, 0, -0.8], [1.9, 0, -1.7], [-0.2, 0, -3.2]]
+    [[-7.5, 0, -1.15], [-5.3, 0, -1.1], [-3.6, 0, -1.15], [-7.8, 0, -1.15]],
+    [[-4.4, 0, -0.8], [-1.5, 0, -0.8], [0.7, 0, -0.5], [-4.5, 0, -0.4]],
+    [[1.8, 0, -0.8], [3.1, 0, -0.75], [3.2, 0, 1.2], [1.8, 0, -0.8]],
+    [[8.9, 0, 2.7], [11.5, 0, 2.7], [11.8, 0, -2.8], [9.1, 0, -2.8]],
+    [[-7.8, 0, 3.8], [-7.5, 0, 6.2], [-7.8, 0, 6.7], [-8.0, 0, 4.0]],
+    [[3.2, 0, -2.7], [4.0, 0, -2.8], [6.5, 0, -2.8], [5.0, 0, -2.7]],
+    [[4.2, 0, -2.8], [7.6, 0, -2.8], [8.5, 0, -2.6], [5.0, 0, -2.6]],
+    [[9.0, 0, 2.8], [11.4, 0, 2.8], [11.8, 0, -2.9], [9.4, 0, -2.9]],
+    [[-1.8, 0, -1.2], [0.2, 0, -1.0], [1.6, 0, -1.0], [-0.2, 0, -1.3]]
   ];
+  // Navigation mesh: padded furniture footprints and room partitions. All agents
+  // use the same route planner so their paths bend around props instead of
+  // walking through desks, chairs, walls, shower fixtures, or pool water.
+  const navStep = 0.4;
+  const navMinX = -12.45;
+  const navMaxX = 15.65;
+  const navMinZ = -8.0;
+  const navMaxZ = 14.4;
+  const navWidth = Math.floor((navMaxX - navMinX) / navStep) + 1;
+  const navDepth = Math.floor((navMaxZ - navMinZ) / navStep) + 1;
+  const navBlockers = [
+    // Outer room shell.
+    { x1: -13.0, x2: -12.52, z1: -7.85, z2: 7.82 },
+    { x1: 12.52, x2: 13.0, z1: -7.85, z2: 7.82 },
+    { x1: -13.0, x2: 13.0, z1: -7.85, z2: -7.42 },
+    // Desk and chair envelopes, expanded with a walking clearance.
+    { x1: -8.34, x2: -5.06, z1: -4.88, z2: -1.84 },
+    { x1: -5.56, x2: -1.45, z1: -4.88, z2: -1.84 },
+    { x1: -2.3, x2: 1.8, z1: -4.88, z2: -1.84 },
+    { x1: 1.33, x2: 4.7, z1: -6.15, z2: -3.05 },
+    { x1: 4.38, x2: 7.76, z1: -6.15, z2: -3.05 },
+    { x1: 7.42, x2: 10.8, z1: -6.15, z2: -3.05 },
+    // Glass pod dividers between workstations.
+    { x1: -5.12, x2: -4.88, z1: -4.95, z2: -2.87 },
+    { x1: -1.94, x2: -1.7, z1: -4.95, z2: -2.87 },
+    { x1: 1.3, x2: 1.54, z1: -5.62, z2: -3.55 },
+    { x1: 4.44, x2: 4.68, z1: -5.62, z2: -3.55 },
+    { x1: 7.56, x2: 7.8, z1: -5.62, z2: -3.55 },
+    // Reading nook, bookcase, lounge, and arcade room.
+    { x1: 1.42, x2: 4.48, z1: -4.45, z2: -1.22 },
+    { x1: -9.16, x2: -8.04, z1: -3.08, z2: -0.12 },
+    { x1: 3.78, x2: 8.03, z1: -2.48, z2: 1.02 },
+    { x1: 3.42, x2: 8.98, z1: 1.22, z2: 4.72 },
+    // Pantry counters / fridge.
+    { x1: -8.96, x2: -4.28, z1: 1.18, z2: 3.28 },
+    // Executive desk and visitor seating.
+    { x1: -4.15, x2: 0.82, z1: 1.76, z2: 4.18 },
+    // Boss room's glass / wood partitions; the front remains open.
+    { x1: -4.34, x2: -4.17, z1: 1.78, z2: 5.74 },
+    { x1: -4.19, x2: -2.1, z1: 1.58, z2: 1.82 },
+    { x1: -0.82, x2: 1.03, z1: 1.58, z2: 1.82 },
+    { x1: 0.92, x2: 1.08, z1: 1.78, z2: 2.96 },
+    { x1: 0.92, x2: 1.08, z1: 4.25, z2: 5.72 },
+    // Bathroom external walls and door jambs.
+    { x1: -12.72, x2: -12.38, z1: 2.9, z2: 7.12 },
+    { x1: -8.63, x2: -8.29, z1: 2.9, z2: 7.12 },
+    { x1: -12.72, x2: -8.29, z1: 2.84, z2: 3.16 },
+    { x1: -12.72, x2: -11.18, z1: 6.84, z2: 7.16 },
+    { x1: -9.82, x2: -8.29, z1: 6.84, z2: 7.16 },
+    // Bathroom fixtures.
+    { x1: -12.0, x2: -10.95, z1: 3.2, z2: 4.65 },
+    { x1: -10.0, x2: -9.08, z1: 3.65, z2: 4.8 },
+    { x1: -10.35, x2: -8.98, z1: 5.48, z2: 6.15 },
+    // Meeting room furniture and chairs.
+    { x1: 7.72, x2: 12.48, z1: -2.18, z2: 2.06 },
+    // Dining room glass partitions and the table/chair cluster.
+    { x1: 2.57, x2: 2.9, z1: 4.58, z2: 7.58 },
+    { x1: 7.4, x2: 7.73, z1: 4.58, z2: 7.58 },
+    { x1: 2.42, x2: 4.42, z1: 4.46, z2: 4.78 },
+    { x1: 5.88, x2: 7.84, z1: 4.46, z2: 4.78 },
+    { x1: 3.22, x2: 7.08, z1: 4.76, z2: 7.52 },
+    // Pool water, coping, sunbeds and parasol. The surrounding deck stays walkable.
+    { x1: 8.63, x2: 14.08, z1: 8.7, z2: 12.35 },
+    { x1: 7.45, x2: 9.04, z1: 10.45, z2: 12.32 },
+    { x1: 13.65, x2: 15.28, z1: 10.45, z2: 12.32 },
+    { x1: 7.15, x2: 9.2, z1: 8.18, z2: 9.82 }
+  ];
+  const navBlockedAt = (x, z) => {
+    if (x < navMinX || x > navMaxX || z < navMinZ || z > navMaxZ) return true;
+    if (z < 7.82 && (x < -12.48 || x > 12.48)) return true;
+    return navBlockers.some((r) => x >= r.x1 && x <= r.x2 && z >= r.z1 && z <= r.z2);
+  };
+  const navIndex = (ix, iz) => iz * navWidth + ix;
+  const navPoint = (ix, iz) => [navMinX + ix * navStep, navMinZ + iz * navStep];
+  const navCellFor = (point) => ({
+    ix: Math.max(0, Math.min(navWidth - 1, Math.round((point.x - navMinX) / navStep))),
+    iz: Math.max(0, Math.min(navDepth - 1, Math.round((point.z - navMinZ) / navStep)))
+  });
+  const nearestWalkableCell = (point) => {
+    const start = navCellFor(point);
+    if (!navBlockedAt(...navPoint(start.ix, start.iz))) return start;
+    for (let radius = 1; radius <= 18; radius++) {
+      let best = null;
+      let bestDistance = Infinity;
+      for (let dx = -radius; dx <= radius; dx++) {
+        for (let dz = -radius; dz <= radius; dz++) {
+          if (Math.max(Math.abs(dx), Math.abs(dz)) !== radius) continue;
+          const ix = start.ix + dx;
+          const iz = start.iz + dz;
+          if (ix < 0 || ix >= navWidth || iz < 0 || iz >= navDepth) continue;
+          const p = navPoint(ix, iz);
+          if (navBlockedAt(p[0], p[1])) continue;
+          const d = Math.hypot(p[0] - point.x, p[1] - point.z);
+          if (d < bestDistance) { best = { ix, iz }; bestDistance = d; }
+        }
+      }
+      if (best) return best;
+    }
+    return start;
+  };
+  const findWalkPath = (from, to) => {
+    const start = nearestWalkableCell(from);
+    const goal = nearestWalkableCell(to);
+    const startId = navIndex(start.ix, start.iz);
+    const goalId = navIndex(goal.ix, goal.iz);
+    if (startId === goalId) return [navPoint(goal.ix, goal.iz)];
+    const total = navWidth * navDepth;
+    const gScore = new Float32Array(total);
+    gScore.fill(Infinity);
+    const cameFrom = new Int32Array(total);
+    cameFrom.fill(-1);
+    const closed = new Uint8Array(total);
+    const heap = [];
+    const heuristic = (a, b) => {
+      const ax = a % navWidth, az = Math.floor(a / navWidth);
+      const bx = b % navWidth, bz = Math.floor(b / navWidth);
+      const dx = Math.abs(ax - bx), dz = Math.abs(az - bz);
+      return Math.max(dx, dz) + (Math.SQRT2 - 1) * Math.min(dx, dz);
+    };
+    const push = (node) => {
+      heap.push(node);
+      let i = heap.length - 1;
+      while (i > 0) {
+        const parent = (i - 1) >> 1;
+        if (heap[parent].f <= node.f) break;
+        heap[i] = heap[parent]; i = parent;
+      }
+      heap[i] = node;
+    };
+    const pop = () => {
+      if (!heap.length) return null;
+      const top = heap[0];
+      const last = heap.pop();
+      if (heap.length) {
+        let i = 0;
+        while (true) {
+          let child = i * 2 + 1;
+          if (child >= heap.length) break;
+          if (child + 1 < heap.length && heap[child + 1].f < heap[child].f) child++;
+          if (heap[child].f >= last.f) break;
+          heap[i] = heap[child]; i = child;
+        }
+        heap[i] = last;
+      }
+      return top;
+    };
+    gScore[startId] = 0;
+    push({ id: startId, f: heuristic(startId, goalId) });
+    const directions = [
+      [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
+      [1, 1, Math.SQRT2], [1, -1, Math.SQRT2], [-1, 1, Math.SQRT2], [-1, -1, Math.SQRT2]
+    ];
+    let found = false;
+    let iterations = 0;
+    while (heap.length && iterations < total * 4) {
+      iterations++;
+      const current = pop().id;
+      if (closed[current]) continue;
+      if (current === goalId) { found = true; break; }
+      closed[current] = 1;
+      const cx = current % navWidth;
+      const cz = Math.floor(current / navWidth);
+      for (const [dx, dz, cost] of directions) {
+        const nx = cx + dx, nz = cz + dz;
+        if (nx < 0 || nx >= navWidth || nz < 0 || nz >= navDepth) continue;
+        const [wx, wz] = navPoint(nx, nz);
+        if (navBlockedAt(wx, wz)) continue;
+        // Do not cut diagonally through the corner of a desk or partition.
+        if (dx && dz) {
+          const sideA = navPoint(cx + dx, cz);
+          const sideB = navPoint(cx, cz + dz);
+          if (navBlockedAt(...sideA) || navBlockedAt(...sideB)) continue;
+        }
+        const nextId = navIndex(nx, nz);
+        if (closed[nextId]) continue;
+        const score = gScore[current] + cost;
+        if (score >= gScore[nextId]) continue;
+        cameFrom[nextId] = current;
+        gScore[nextId] = score;
+        push({ id: nextId, f: score + heuristic(nextId, goalId) });
+      }
+    }
+    if (!found) return [navPoint(goal.ix, goal.iz)];
+    const rawIds = [];
+    let cursor = goalId;
+    rawIds.push(cursor);
+    while (cursor !== startId && cameFrom[cursor] !== -1) {
+      cursor = cameFrom[cursor];
+      rawIds.push(cursor);
+    }
+    rawIds.reverse();
+    const raw = rawIds.map((id) => navPoint(id % navWidth, Math.floor(id / navWidth)));
+    const clearSegment = (a, b) => {
+      const distance = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      const checks = Math.max(2, Math.ceil(distance / (navStep * 0.32)));
+      for (let i = 1; i < checks; i++) {
+        const t = i / checks;
+        if (navBlockedAt(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)) return false;
+      }
+      return true;
+    };
+    // String-pull the grid route into a few natural arcs instead of tiny right angles.
+    const smooth = [raw[0]];
+    let anchor = 0;
+    while (anchor < raw.length - 1) {
+      let next = raw.length - 1;
+      while (next > anchor + 1 && !clearSegment(raw[anchor], raw[next])) next--;
+      smooth.push(raw[next]);
+      anchor = next;
+    }
+    return smooth;
+  };
+
   characters.forEach((info, i) => {
     const c = group(scene, 'character-' + info.id, waypoints[i][0]);
     c.userData.character = info;
