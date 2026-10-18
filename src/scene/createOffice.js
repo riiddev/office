@@ -507,7 +507,7 @@ export function createOffice(host, { onSelect } = {}) {
     { x: -1.65, z: 4.45, face: Math.PI, activity: 'work', dwell: 7 },
     { x: 1.8, z: 5.95, face: 0.55, activity: 'walk', dwell: 0 },
     { x: 10.1, z: 2.7, face: Math.PI, activity: 'meeting', dwell: 6 },
-    { x: 3.4, z: 1.3, face: -0.25, activity: 'lounge', dwell: 5 },
+    { x: 3.8, z: 0.55, face: -0.25, activity: 'lounge', dwell: 5 },
     { x: -4.0, z: 3.7, face: -Math.PI / 2, activity: 'coffee', dwell: 5 },
     { x: 6.7, z: -6.6, face: 0, activity: 'review', dwell: 5 },
     { x: 7.4, z: 8.0, face: 0.3, activity: 'pool', dwell: 6 },
@@ -542,7 +542,7 @@ export function createOffice(host, { onSelect } = {}) {
     [[1.8, 0, -0.8], [2.9, 0, -0.6], [2.6, 0, 1.6], [1.8, 0, -0.8]],
     [[9.2, 0, 2.7], [11.5, 0, 2.7], [12.0, 0, -2.7], [9.2, 0, -2.8]],
     [[-7.8, 0, 3.8], [-7.5, 0, 6.2], [-7.8, 0, 6.7], [-8.0, 0, 4.0]],
-    [[3.2, 0, -0.9], [3.4, 0, 1.3], [2.1, 0, 1.4], [3.2, 0, -0.9]],
+    [[6.0, 0, 2.8], [6.0, 0, 3.0], [6.2, 0, 2.8], [6.0, 0, 2.8]],
     [[8.4, 0, -2.8], [8.4, 0, -2.3], [8.4, 0, -2.8], [9.1, 0, -2.3]],
     [[9.4, 0, 3.2], [9.4, 0, 6.2], [11.6, 0, 6.2], [9.4, 0, 3.2]],
     [[1.6, 0, -1.1], [2.0, 0, -1.1], [2.2, 0, 1.5], [1.6, 0, -1.1]]
@@ -578,11 +578,19 @@ export function createOffice(host, { onSelect } = {}) {
     // Reading nook, bookcase, lounge, and arcade room.
     { x1: -1.95, x2: 1.2, z1: -2.0, z2: 1.25 },
     { x1: -9.16, x2: -8.04, z1: -3.08, z2: -0.12 },
-    { x1: 3.78, x2: 8.03, z1: -2.48, z2: 1.02 },
+    // Actual lounge furniture footprints leave an aisle beside the sofa.
+    { x1: 3.86, x2: 7.92, z1: -2.4, z2: -0.22 },
+    { x1: 4.54, x2: 7.28, z1: -0.5, z2: 1.05 },
+    { x1: 7.55, x2: 8.48, z1: -1.82, z2: -0.45 },
     // Divider panels between lounge and gaming room, with a walk-through gap.
     { x1: 3.2, x2: 5.55, z1: 0.72, z2: 1.38 },
     { x1: 6.45, x2: 8.98, z1: 0.72, z2: 1.38 },
-    { x1: 3.42, x2: 8.98, z1: 1.22, z2: 4.72 },
+    // Arcade cabinets, console and beanbags; the carpet itself is walkable.
+    { x1: 4.55, x2: 5.55, z1: 1.24, z2: 2.44 },
+    { x1: 6.25, x2: 7.25, z1: 1.24, z2: 2.44 },
+    { x1: 4.0, x2: 5.7, z1: 2.95, z2: 4.55 },
+    { x1: 6.65, x2: 8.35, z1: 2.95, z2: 4.55 },
+    { x1: 5.0, x2: 7.4, z1: 3.3, z2: 4.4 },
     // Pantry counters / fridge.
     { x1: -8.96, x2: -4.28, z1: 1.18, z2: 3.28 },
     // Executive desk and visitor seating.
