@@ -557,7 +557,7 @@ export function createOffice(host, { onSelect } = {}) {
     { x: 11.0, z: 5.38, face: Math.PI, activity: 'meeting', dwell: 6 },
     { x: 3.7, z: -0.45, face: 2.3, activity: 'lounge', dwell: 5 },
     { x: -6.0, z: 3.7, face: Math.PI, activity: 'coffee', dwell: 5 },
-    { x: 10.8, z: -2.8, face: 0, activity: 'review', dwell: 5 },
+    { x: -12.25, z: -2.6, face: Math.PI / 2, activity: 'review', dwell: 5 },
     { x: 13.2, z: 12.4, face: 0.5, activity: 'pool', dwell: 6 },
     { x: -1.65, z: 4.45, face: Math.PI, activity: 'work', dwell: 8 }
   ];
@@ -586,7 +586,7 @@ export function createOffice(host, { onSelect } = {}) {
   // Characters are deliberately simple toy-like figures; their wandering is decorative.
   const characterGroups = [];
   const waypoints = [
-    [[-7.5, 0, -0.15], [-5.3, 0, -0.1], [-3.6, 0, -0.15], [-7.8, 0, -0.15]],
+    [[-7.5, 0, -0.15], [-10.2, 0, -1.8], [-12.2, 0, -2.65], [-10.65, 0, -2.6]],
     [[-4.4, 0, 0.0], [-2.7, 0, 0.0], [-2.7, 0, 1.4], [-4.5, 0, 0.0]],
     [[2.0, 0, -0.5], [3.0, 0, -0.3], [2.6, 0, 1.6], [2.0, 0, -0.5]],
     [[9.35, 0, 5.75], [11.2, 0, 5.75], [11.2, 0, 6.35], [9.35, 0, 6.35]],
@@ -611,6 +611,18 @@ export function createOffice(host, { onSelect } = {}) {
     { x1: -16.2, x2: -15.72, z1: -8.45, z2: 10.8 },
     { x1: 15.72, x2: 16.2, z1: -8.45, z2: 10.8 },
     { x1: -16.2, x2: 16.2, z1: -8.45, z2: -8.02 },
+    // Focus studio enclosure: east doorway stays open between z -4.0 and -0.8.
+    { x1: -15.9, x2: -10.3, z1: -5.32, z2: -5.02 },
+    { x1: -15.9, x2: -15.62, z1: -5.25, z2: 0.42 },
+    { x1: -10.55, x2: -10.3, z1: -5.25, z2: -4.0 },
+    { x1: -10.55, x2: -10.3, z1: -0.8, z2: 0.42 },
+    { x1: -15.85, x2: -14.45, z1: 0.18, z2: 0.42 },
+    { x1: -11.75, x2: -10.35, z1: 0.18, z2: 0.42 },
+    // Bookcases and worktable inside the new wing.
+    { x1: -15.3, x2: -13.95, z1: -4.9, z2: -4.2 },
+    { x1: -12.2, x2: -10.85, z1: -4.9, z2: -4.2 },
+    { x1: -14.9, x2: -12.9, z1: -2.88, z2: -1.62 },
+    { x1: -14.3, x2: -13.5, z1: -1.72, z2: -0.88 },
     // Desk and chair envelopes, expanded with a walking clearance.
     { x1: -8.34, x2: -5.06, z1: -3.5, z2: -0.65 },
     { x1: -5.56, x2: -1.45, z1: -3.5, z2: -0.65 },
@@ -910,6 +922,7 @@ export function createOffice(host, { onSelect } = {}) {
 
   const roomViews = {
     all: { position: [34, 26, 40], target: [0, 1.0, 4.7] },
+    focus: { position: [-4.8, 8.5, 13.5], target: [-13.1, 1.1, -2.4] },
     boss: { position: [10.5, 8.5, 13], target: [-1.65, 1.05, 3.3] },
     studio: { position: [12, 10, 16], target: [0.2, 1, -3.0] },
     meeting: { position: [15, 10, 16], target: [11.0, 1, 3.15] },
