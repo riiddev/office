@@ -59,7 +59,7 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
     const floorPose = placement.pose === 'floor' ? 1 : 0
     const lie = placement.pose === 'lie' ? 1 : 0
     const legs = sit || floorPose ? -Math.PI / 2.2 : 0
-    return { speed: 0, phase: seed, sit, lie, floor: floorPose, legL: legs, legR: legs, armL: 0, armR: 0, armLz: 0, armRz: 0, headYaw: 0, headPitch: 0, headRoll: 0, lean: 0, sway: 0, bodyY: lie * ((placement.height ?? 0.5) + 0.16) + (1 - lie) * (-0.14 * sit - 0.5 * floorPose), bobY: 0, twist: 0, torsoX: 0, prayerY: 0 }
+    return { speed: 0, phase: seed, sit, lie, floor: floorPose, legL: legs, legR: legs, armL: 0, armR: 0, armLz: 0, armRz: 0, headYaw: 0, headPitch: 0, headRoll: 0, lean: 0, sway: 0, bodyY: lie * ((placement.height ?? 0.5) + 0.16) + (1 - lie) * (-0.14 * sit - 0.5 * floorPose), bobY: 0, twist: 0, torsoX: 0 }
   })())
   useEffect(() => {
     const group = root.current
@@ -298,7 +298,7 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
     }
     let prayerStage: 'qiyam' | 'ruku' | 'itidal' | 'sujud' | 'sitting' | 'final-sitting' = 'qiyam'
     let torsoTarget = 0
-    let prayerYTarget = 0
+    let torsoHeightTarget = 1.2
     if ((prayerCycle >= 3 && prayerCycle < 5) || (prayerCycle >= 14.5 && prayerCycle < 16.5)) prayerStage = 'ruku'
     else if ((prayerCycle >= 5 && prayerCycle < 6.2) || (prayerCycle >= 16.5 && prayerCycle < 17.8)) prayerStage = 'itidal'
     else if ((prayerCycle >= 6.2 && prayerCycle < 8.2) || (prayerCycle >= 9.6 && prayerCycle < 11.6) || (prayerCycle >= 17.8 && prayerCycle < 19.8) || (prayerCycle >= 21.2 && prayerCycle < 23.2)) prayerStage = 'sujud'
@@ -307,11 +307,11 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
     if (praying) {
       // Synchronized two-rakat sequence: qiyam, ruku, itidal, two sujuds with a sitting between,
       // then the second rakat and final sitting. Every participant uses the same session phase.
-      if (prayerStage === 'ruku') { torsoTarget = -0.58; legL = legR = 0.04; armL = armR = -0.9; headPitch = 0.28 }
-      else if (prayerStage === 'itidal') { torsoTarget = -0.02; armL = armR = -0.24; headPitch = 0.03 }
-      else if (prayerStage === 'sujud') { torsoTarget = -1.12; prayerYTarget = -0.25; legL = legR = -1.05; armL = armR = -0.05; headPitch = -0.3 }
-      else if (prayerStage === 'sitting' || prayerStage === 'final-sitting') { torsoTarget = -0.28; prayerYTarget = -0.23; legL = legR = -1.18; armL = armR = -0.32; headPitch = 0.08 }
-      else { torsoTarget = 0; prayerYTarget = 0; legL = legR = 0; armL = armR = -0.2; headPitch = 0.02 }
+      if (prayerStage === 'ruku') { torsoTarget = -0.58; torsoHeightTarget = 1.2; legL = legR = 0.04; armL = armR = -0.9; headPitch = 0.28 }
+      else if (prayerStage === 'itidal') { torsoTarget = -0.02; torsoHeightTarget = 1.2; armL = armR = -0.24; headPitch = 0.03 }
+      else if (prayerStage === 'sujud') { torsoTarget = -1.12; torsoHeightTarget = 0.46; legL = legR = -1.05; armL = armR = -0.05; headPitch = -0.3 }
+      else if (prayerStage === 'sitting' || prayerStage === 'final-sitting') { torsoTarget = -0.28; torsoHeightTarget = 0.72; legL = legR = -1.18; armL = armR = -0.32; headPitch = 0.08 }
+      else { torsoTarget = 0; torsoHeightTarget = 1.2; legL = legR = 0; armL = armR = -0.2; headPitch = 0.02 }
       armLz = 0; armRz = 0
       headYaw = 0
     }
@@ -333,16 +333,18 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
     const targetY = s.lie * ((placement.height ?? 0.5) + 0.16) + (1 - s.lie) * (-0.14 * s.sit - 0.5 * s.floor)
     s.bodyY = damp(s.bodyY, targetY, 10, delta)
     s.torsoX = damp(s.torsoX, praying ? torsoTarget : 0, 8, delta)
-    s.prayerY = damp(s.prayerY, praying ? prayerYTarget : 0, 7, delta)
     if (leftLeg.current && rightLeg.current) { leftLeg.current.rotation.x = s.legL; rightLeg.current.rotation.x = s.legR }
     if (leftArm.current && rightArm.current) {
       leftArm.current.rotation.x = s.armL; rightArm.current.rotation.x = s.armR
       leftArm.current.rotation.z = s.armLz; rightArm.current.rotation.z = s.armRz
     }
-    if (torso.current) torso.current.rotation.x = s.torsoX
+    if (torso.current) {
+      torso.current.rotation.x = s.torsoX
+      torso.current.position.y = damp(torso.current.position.y, praying ? torsoHeightTarget : 1.2, 8, delta)
+    }
     if (head.current) {
       head.current.rotation.set(s.headPitch, s.headYaw, s.headRoll)
-      const headY = praying && prayerStage === 'sujud' ? 1.08 : praying && (prayerStage === 'sitting' || prayerStage === 'final-sitting') ? 1.18 : 1.3
+      const headY = praying && prayerStage === 'sujud' ? -0.15 : praying && (prayerStage === 'sitting' || prayerStage === 'final-sitting') ? -0.03 : 0.1
       head.current.position.y = damp(head.current.position.y, headY, 8, delta)
     }
     if (leftEye.current && rightEye.current) {
@@ -354,7 +356,7 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
       body.current.rotation.x = -Math.PI / 2 * s.lie + s.lean * (1 - s.lie)
       body.current.rotation.y = s.twist
       body.current.rotation.z = s.sway
-      body.current.position.y = s.bodyY + s.bobY + breathe + s.prayerY
+      body.current.position.y = s.bodyY + s.bobY + breathe
     }
     // If a crowd push or an awkward corner stalls a walker, recompute its route from its current position.
     const movement = progress.current
@@ -376,21 +378,23 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
     <group ref={body} onClick={(event) => { event.stopPropagation(); onSelect(station, null) }} onPointerOver={() => { document.body.style.cursor = 'pointer' }} onPointerOut={() => { document.body.style.cursor = '' }}>
       <mesh ref={leftLeg} position={[-0.11, 0.66, 0]} castShadow geometry={legGeometry}><meshStandardMaterial color={tint(colors.pants)} roughness={0.8}/></mesh>
       <mesh ref={rightLeg} position={[0.11, 0.66, 0]} castShadow geometry={legGeometry}><meshStandardMaterial color={tint(colors.pants)} roughness={0.8}/></mesh>
-      <group ref={torso} position={[0, 1.2, 0]}><RBox position={[0, -0.22, 0]} size={[0.48, 0.58, 0.3]} radius={0.07} color={tint(colors.shirt)} roughness={0.85}/></group>
-      <mesh ref={leftArm} position={[-0.31, 1.2, 0]} castShadow geometry={armGeometry}><meshStandardMaterial color={tint(colors.shirt)} roughness={0.85}/></mesh>
-      <mesh ref={rightArm} position={[0.31, 1.2, 0]} castShadow geometry={armGeometry}><meshStandardMaterial color={tint(colors.shirt)} roughness={0.85}/></mesh>
-      {/* The head pivots at the neck so it can nod, turn and tilt. */}
-      <group ref={head} position={[0, 1.3, 0]}>
-        <group position={[0, -1.3, 0]}>
-          <RBox position={[0, 1.5, 0]} size={[0.4, 0.4, 0.37]} radius={0.08} color={tint(colors.skin)} roughness={0.7}/>
-          <RBox position={[0, 1.72, -0.02]} size={[0.43, 0.13, 0.41]} radius={0.05} color={tint(colors.hair)} roughness={0.9}/>
-          <RBox position={[0, 1.58, -0.19]} size={[0.43, 0.3, 0.06]} radius={0.03} color={tint(colors.hair)} roughness={0.9}/>
-          <group ref={leftEye} position={[-0.09, 1.52, 0.186]}><RBox position={[0, 0, 0]} size={[0.06, 0.07, 0.01]} radius={0.004} color="#17201e" shadow={false}/></group>
-          <group ref={rightEye} position={[0.09, 1.52, 0.186]}><RBox position={[0, 0, 0]} size={[0.06, 0.07, 0.01]} radius={0.004} color="#17201e" shadow={false}/></group>
-          <RBox position={[0, 1.4, 0.186]} size={[0.12, 0.025, 0.01]} radius={0.004} color="#9a5a44" shadow={false}/>
+      <group ref={torso} position={[0, 1.2, 0]}>
+        <RBox position={[0, -0.22, 0]} size={[0.48, 0.58, 0.3]} radius={0.07} color={tint(colors.shirt)} roughness={0.85}/>
+        <mesh ref={leftArm} position={[-0.31, 0, 0]} castShadow geometry={armGeometry}><meshStandardMaterial color={tint(colors.shirt)} roughness={0.85}/></mesh>
+        <mesh ref={rightArm} position={[0.31, 0, 0]} castShadow geometry={armGeometry}><meshStandardMaterial color={tint(colors.shirt)} roughness={0.85}/></mesh>
+        {/* Head and arms follow the torso pivot, so bows and prostration move as one body chain. */}
+        <group ref={head} position={[0, 0.1, 0]}>
+          <group position={[0, -1.3, 0]}>
+            <RBox position={[0, 1.5, 0]} size={[0.4, 0.4, 0.37]} radius={0.08} color={tint(colors.skin)} roughness={0.7}/>
+            <RBox position={[0, 1.72, -0.02]} size={[0.43, 0.13, 0.41]} radius={0.05} color={tint(colors.hair)} roughness={0.9}/>
+            <RBox position={[0, 1.58, -0.19]} size={[0.43, 0.3, 0.06]} radius={0.03} color={tint(colors.hair)} roughness={0.9}/>
+            <group ref={leftEye} position={[-0.09, 1.52, 0.186]}><RBox position={[0, 0, 0]} size={[0.06, 0.07, 0.01]} radius={0.004} color="#17201e" shadow={false}/></group>
+            <group ref={rightEye} position={[0.09, 1.52, 0.186]}><RBox position={[0, 0, 0]} size={[0.06, 0.07, 0.01]} radius={0.004} color="#17201e" shadow={false}/></group>
+            <RBox position={[0, 1.4, 0.186]} size={[0.12, 0.025, 0.01]} radius={0.004} color="#9a5a44" shadow={false}/>
+          </group>
         </group>
+        {station.id === 'boss' && <RBox position={[0, -0.05, 0.16]} size={[0.07, 0.25, 0.025]} radius={0.01} color="#d9b36b" shadow={false}/>}
       </group>
-      {station.id === 'boss' && <RBox position={[0, 1.08, 0.16]} size={[0.07, 0.25, 0.025]} radius={0.01} color="#d9b36b" shadow={false}/>}
       {unknown && <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.45, 0.55, 24]}/><meshBasicMaterial color="#e9c47b" transparent opacity={0.85}/></mesh>}
       <object3D ref={anchor} position={[0, 2.05, 0]}/>
     </group>
