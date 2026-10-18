@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { officeStateBadge } from '../office-state.ts'
 import { agentLook } from '../agents.ts'
-import { BATHROOM, DINING, MUSHOLLA, bathroomQueueSpot, clampTarget, createLayout, diningSpot, FLOOR_HEIGHT, floorOf, GAME_ROOM, idlePlan, mushollaSpot, placementFor, walkPath3, type Floor, type OfficeLayout, type Placement, type Vec3 } from '../office3d-layout.ts'
+import { DINING, MUSHOLLA, bathroomQueueSpot, clampTarget, createLayout, diningSpot, FLOOR_HEIGHT, floorOf, GAME_ROOM, idlePlan, mushollaSpot, placementFor, walkPath3, type Floor, type OfficeLayout, type Placement, type Vec3 } from '../office3d-layout.ts'
 import { Environment } from '../scene3d/environment.tsx'
 import { RBox, WorkDesk } from '../scene3d/props.tsx'
 import type { OfficeStation } from '../types.ts'
@@ -749,7 +749,7 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
     if (station.routineStop === 'bathroom') {
       const brushing = station.activity.toLowerCase().includes('brushing teeth')
       return brushing
-        ? { position: [7.9, FLOOR_HEIGHT, -3.25], facing: Math.PI, seated: false, label: 'Sink' }
+        ? { position: [8.1, FLOOR_HEIGHT, -3.25], facing: Math.PI, seated: false, label: 'Sink' }
         : BATHROOM_SPOTS[0]
     }
     if (station.routineStop === 'bedroom' || station.routineStop === 'tidur') {
@@ -757,7 +757,7 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
       const bed = beds?.spots[(seat - 1) % (beds.spots.length || 1)]
       if (bed) return station.routineStop === 'tidur'
         ? bed
-        : { position: bed.position, facing: bed.facing, seated: false, label: 'Getting ready in the bedroom' }
+        : { position: [bed.position[0] + 0.75, FLOOR_HEIGHT, bed.position[2] - 0.25], facing: 0, seated: false, label: 'Getting ready in the bedroom' }
     }
     const stop = layout.idleStops.find((item) => item.key === station.routineStop)
     const spot = stop?.spots[(seat - 1) % (stop.spots.length || 1)]
