@@ -182,7 +182,7 @@ function idleStops(building: OfficeLayout['building'], baksoCart: Vec3, kopiBike
       upstairs(HAMMOCK[0] + 0.9, HAMMOCK[2], -Math.PI / 2, { pose: 'lie', height: 0.62, label: 'Napping in the hammock' }),
       upstairs(7.9, BALCONY.maxZ - 0.45, 0, { label: 'Enjoying the view from the balcony' }),
     ] },
-    { key: 'musholla', label: 'Musholla · prayer rows', spots: Array.from({ length: MUSHOLLA.capacity + 1 }, (_, index) => mushollaSpot(index)) },
+    { key: 'musholla', label: 'Musholla · prayer rows', spots: Array.from({ length: MUSHOLLA.capacity }, (_, index) => mushollaSpot(index)) },
     { key: 'dining', label: 'Dining room', spots: Array.from({ length: DINING.tableCenters.length * 6 }, (_, index) => diningSpot(index)) },
     { key: 'lounge', label: 'Relaxing in the lounge', spots: LOUNGE_SEATS.map(([x, , z], index) => spot(x, z, LOUNGE_FACING[index], true)) },
     { key: 'galon', label: 'Getting water from the galon', spots: [spot(8.35, -0.4, Math.PI / 2), spot(8.2, -1.05, 2.2), spot(8.2, 0.3, 1.1)] },
