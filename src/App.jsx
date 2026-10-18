@@ -1,20 +1,20 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { createOffice } from './scene/createOffice.js';
 import { agents } from './data/characters.js';
+import RuangOffice from './scene/RuangOffice.jsx';
 
 const rooms = [
   { id: 'all', label: 'Whole office', icon: '⌂' },
-  { id: 'boss', label: 'Boss office', icon: '♛' },
-  { id: 'studio', label: 'Work studio', icon: '▤' },
-  { id: 'focus', label: 'Focus room', icon: '✳' },
+  { id: 'studio', label: 'Workspace', icon: '▤' },
   { id: 'meeting', label: 'Meeting room', icon: '◫' },
   { id: 'lounge', label: 'Lounge', icon: '▱' },
   { id: 'games', label: 'Game room', icon: '✦' },
-  { id: 'dining', label: 'Dining area', icon: '♧' },
-  { id: 'bathroom', label: 'Bathroom', icon: '⌁' },
-  { id: 'pool', label: 'Pool deck', icon: '≈' },
   { id: 'pantry', label: 'Pantry', icon: '☕' },
+  { id: 'street', label: 'Street food', icon: '♨' },
+  { id: 'bedroom', label: 'Bedroom', icon: '☾' },
+  { id: 'bathroom', label: 'Bathroom', icon: '⌁' },
+  { id: 'lesehan', label: 'Lesehan', icon: '⌑' },
+  { id: 'balcony', label: 'Balcony', icon: '⌂' },
 ];
 
 const statusLabels = {
@@ -52,8 +52,6 @@ function Status({ status }) {
 }
 
 function App() {
-  const sceneHost = useRef(null);
-  const office = useRef(null);
   const appRef = useRef(null);
   const [night, setNight] = useState(false);
   const [activeRoom, setActiveRoom] = useState('all');
@@ -75,10 +73,6 @@ function App() {
   }), [crew]);
 
   useEffect(() => {
-    if (!sceneHost.current) return undefined;
-    office.current = createOffice(sceneHost.current, {
-      onSelect: (agentId) => setSelectedAgentId(agentId),
-    });
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!reduce && appRef.current) {
       gsap.fromTo(
@@ -87,20 +81,12 @@ function App() {
         { y: 0, opacity: 1, duration: 0.55, stagger: 0.055, ease: 'power3.out', clearProps: 'all' },
       );
     }
-    return () => {
-      office.current?.destroy();
-      office.current = null;
-    };
   }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => setClock(new Date()), 30000);
     return () => window.clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    office.current?.setNight(night);
-  }, [night]);
 
   useEffect(() => {
     if (!showConnect) return undefined;
@@ -113,12 +99,12 @@ function App() {
 
   const chooseRoom = (room) => {
     setActiveRoom(room);
-    office.current?.focusRoom(room);
   };
 
   const chooseAgent = (agent) => {
     setSelectedAgentId(agent.id);
-    if (agent.room) chooseRoom(agent.room);
+    if (agent.id === 'boss') chooseRoom('studio');
+    else if (agent.room) chooseRoom(agent.room);
   };
 
   const submitTask = async (event) => {
@@ -196,7 +182,7 @@ function App() {
 
       <section className="v-world-layout v-reveal" aria-label="Interactive virtual office">
         <div className="v-world-stage">
-          <div className="v-scene-host" ref={sceneHost} />
+          <RuangOffice night={night} focusRoom={activeRoom} onSelectAgent={setSelectedAgentId} />
 
           <div className="v-stage-topline">
             <span className="v-stage-live"><i /> WORLD VIEW</span>
@@ -260,7 +246,7 @@ function App() {
             <span><strong>Make yourself at home</strong><small>Drag to orbit <i /> scroll to zoom <i /> click a character</small></span>
           </div>
 
-          <button className="v-stage-reset-floating" onClick={() => { chooseRoom('all'); office.current?.resetView(); }} aria-label="Reset camera view" title="Reset camera">⤢</button>
+          <button className="v-stage-reset-floating" onClick={() => chooseRoom('all')} aria-label="Reset camera view" title="Reset camera">⤢</button>
         </div>
 
         <div className="v-stage-foot">

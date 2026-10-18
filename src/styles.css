@@ -1327,3 +1327,52 @@ body:has(.virtual-shell) {
     transition-duration: .01ms !important;
   }
 }
+
+
+/* Ruang-inspired cutaway 3D world */
+.v-ruang-host { position:absolute; inset:0; overflow:hidden; z-index:0; background:linear-gradient(180deg,#bfe0ef 0%,#e4e8d9 100%); }
+.v-ruang-host .office-3d { position:absolute; inset:0; width:100%; height:100%; aspect-ratio:auto; min-height:0; background:transparent; border:0; box-shadow:none; touch-action:none; }
+.v-ruang-host .office-3d > div:first-child { position:absolute!important; inset:0!important; }
+.v-ruang-host .office-3d canvas { display:block; width:100%!important; height:100%!important; }
+.v-ruang-host .office-3d:focus-visible { outline:2px solid #e5bf6b; outline-offset:-3px; }
+.v-ruang-host .office-3d-tools { display:flex; gap:6px; position:absolute; right:10px; bottom:10px; top:auto; z-index:8; }
+.v-ruang-host .office-3d-tools button { background:rgba(18,26,24,.84); border:1px solid rgba(255,255,255,.25); border-radius:8px; color:#f4efe6; cursor:pointer; font:inherit; font-size:11px; padding:6px 9px; }
+.v-ruang-host .office-3d-tools button:hover { background:rgba(18,26,24,.96); }
+.v-ruang-host .office-3d-tools button.active { background:#385a4b; border-color:#e8d49a; }
+.v-ruang-host .office-3d-floors { display:flex; flex-direction:column; gap:6px; left:10px; position:absolute; top:10px; z-index:8; }
+.v-ruang-host .office-3d-floors button { align-items:center; background:rgba(18,26,24,.8); border:1px solid rgba(255,255,255,.22); border-radius:8px; color:#f4efe6; cursor:pointer; display:grid; font:inherit; font-size:11px; gap:7px; grid-template-columns:24px auto auto; min-width:136px; padding:5px 8px 5px 5px; text-align:left; }
+.v-ruang-host .office-3d-floors button b { align-items:center; border:1px solid rgba(255,255,255,.4); border-radius:50%; display:inline-flex; font:600 11px ui-monospace,monospace; height:22px; justify-content:center; width:22px; }
+.v-ruang-host .office-3d-floors button small { background:rgba(255,255,255,.18); border-radius:9px; color:#fff; font:600 10px ui-monospace,monospace; justify-self:end; padding:1px 6px; }
+.v-ruang-host .office-3d-floors button.active { border-color:#f4d35e; }
+.v-ruang-host .office-3d-floors button.active b { background:#f4d35e; border-color:#f4d35e; color:#1c1f24; }
+.v-ruang-host .office-3d-labels { inset:0; overflow:clip; pointer-events:none; position:absolute; z-index:4; }
+.v-ruang-host .office-3d-labels > * { left:0; position:absolute; top:0; visibility:hidden; will-change:transform; }
+.v-ruang-host .agent-tag-3d { align-items:center; background:rgba(20,29,26,.58); backdrop-filter:blur(6px); border:1px solid rgba(237,243,222,.28); border-radius:8px; color:#f6f4e8; cursor:pointer; display:grid; gap:4px; justify-items:center; padding:5px 7px; pointer-events:auto; white-space:nowrap; box-shadow:0 5px 18px #17201e33; }
+.v-ruang-host .agent-tag-row { align-items:center; display:flex; gap:5px; }
+.v-ruang-host .agent-tag-3d .pixel-station-name { font-size:10px; font-weight:650; letter-spacing:.02em; }
+.v-ruang-host .agent-tag-3d .badge { border-radius:999px; font-size:8px; letter-spacing:.03em; padding:2px 5px; width:max-content; }
+.v-ruang-host .agent-tag-3d .good { background:#d9f2dc; color:#245338; }
+.v-ruang-host .agent-tag-3d .unknown { background:#f6e7c4; color:#735a23; }
+.v-ruang-host .agent-tag-3d .muted { background:#e2e5df; color:#566059; }
+.v-ruang-host .agent-tag-3d:focus-visible { outline:2px solid #f5bd6d; outline-offset:3px; }
+.v-ruang-host .agent-tag-3d.state-offline { opacity:.7; }
+.v-ruang-host .speech { animation:ruang-label-float 2.4s ease-in-out infinite; background:#fff7e8; border:1px solid #17201e; border-radius:6px; color:#1b2420; font:9px ui-monospace,monospace; line-height:1.3; max-width:150px; order:0; padding:4px 6px; position:relative; text-align:center; white-space:normal; }
+.v-ruang-host .speech::after { border:5px solid transparent; border-top-color:#17201e; bottom:-11px; content:''; left:calc(50% - 5px); position:absolute; }
+.v-ruang-host .speech-3d { max-width:150px; width:max-content; white-space:normal; }
+.v-ruang-host .speech-3d.speech-idle { background:rgba(244,241,225,.9); border-style:dashed; color:#5c6b5f; font-style:italic; }
+.v-ruang-host .speech-sleep { font-style:italic; }
+.v-ruang-host .desk-label-3d { background:#101815; color:#b7c9bf; font:8px ui-monospace,monospace; letter-spacing:.04em; padding:1px 4px; pointer-events:none; white-space:nowrap; }
+.v-ruang-host .office-3d-tools button.active.sleep { background:#3d4f8c; }
+@keyframes ruang-label-float { 50% { transform:translateY(-2px); } }
+@media(max-width:760px) {
+ .v-ruang-host .office-3d-floors { flex-direction:row; max-width:100%; }
+ .v-ruang-host .office-3d-floors button { font-size:10px; gap:5px; grid-template-columns:21px auto; min-width:0; padding:4px 6px; }
+ .v-ruang-host .office-3d-floors button b { width:19px; height:19px; }
+ .v-ruang-host .office-3d-floors button small { display:none; }
+ .v-ruang-host .office-3d-tools { left:10px; right:auto; bottom:9px; }
+ .v-ruang-host .agent-tag-3d { padding:4px 5px; }
+ .v-ruang-host .agent-tag-3d .pixel-station-name { font-size:8px; }
+ .v-ruang-host .agent-tag-3d .badge { font-size:7px; }
+ .v-ruang-host .speech-3d { max-width:112px; font-size:8px; }
+}
+@media(prefers-reduced-motion:reduce) { .v-ruang-host .speech { animation:none!important; } }
