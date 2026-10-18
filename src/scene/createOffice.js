@@ -441,6 +441,8 @@ export function createOffice(host, { onSelect } = {}) {
     const width = Math.max(host.clientWidth, 320);
     const height = Math.max(host.clientHeight, 320);
     camera.aspect = width / height;
+    // Keep the full dollhouse in view on narrow portrait screens.
+    camera.fov = width < 620 ? 47 : width < 920 ? 42 : 38;
     camera.updateProjectionMatrix();
     renderer.setSize(width, height, false);
   };
