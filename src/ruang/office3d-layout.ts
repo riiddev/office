@@ -328,9 +328,11 @@ function upperRoute(from: [number, number], to: [number, number], layout: Office
     if (onBalcony(point)) return [[point[0], BALCONY_LANE_Z], [doorX, BALCONY_LANE_Z], [doorX, AISLE_Z]]
     if (inBedroom(point)) return [[gapX(point[0]), point[1]], [gapX(point[0]), AISLE_Z]]
     if (inMusholla(point)) {
-      // Leave/enter through the only doorway, then use the aisle; do not route through the qibla wall.
+      // Funnel all walkers through a shared point inside the wide doorway. The slight x-offset
+      // keeps the route simplifier from collapsing this bend into a straight line through the wall.
       const doorStepZ = MUSHOLLA.z + 2.85
-      return [[point[0], doorStepZ], [point[0], AISLE_Z]]
+      const doorLaneX = MUSHOLLA.x + 0.2
+      return [[doorLaneX, doorStepZ], [doorLaneX, AISLE_Z]]
     }
     if (inDiningRoom(point) && point[1] > DINING.z + 0.2) {
       // Walk away from the chair row before crossing to the side lane, clearing the tabletop.
