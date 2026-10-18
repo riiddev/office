@@ -7,6 +7,7 @@ const rooms = [
   { id: 'all', label: 'Whole HQ', icon: '⌂' },
   { id: 'boss', label: 'Boss office', icon: '♛' },
   { id: 'studio', label: 'Studio', icon: '✳' },
+  { id: 'focus', label: 'Focus studio', icon: '▤' },
   { id: 'meeting', label: 'War room', icon: '◫' },
   { id: 'lounge', label: 'Lounge', icon: '▱' },
   { id: 'games', label: 'Game room', icon: '✦' },
