@@ -30,7 +30,7 @@ const seedOf = (id: string) => { let hash = 0; for (let index = 0; index < id.le
 const smooth = (edge0: number, edge1: number, value: number) => { const x = Math.min(1, Math.max(0, (value - edge0) / (edge1 - edge0))); return x * x * (3 - 2 * x) }
 const WALK_SPEED = 1.55
 
-function Character({ station, placement, layout, floor, onSelect, anchor, prayerSessionStart, prayerCycleDuration }: { station: OfficeStation & { routineStop?: DailyStop }; placement: Placement; layout: OfficeLayout; floor: Floor; onSelect: (station: OfficeStation, trigger: HTMLElement | null) => void; anchor: (object: THREE.Object3D | null) => void; prayerSessionStart: number; prayerCycleDuration: number }) {
+function Character({ station, placement, layout, floor, onSelect, anchor, prayerSessionStart, prayerCycleDuration, onPrayerReady }: { station: OfficeStation & { routineStop?: DailyStop }; placement: Placement; layout: OfficeLayout; floor: Floor; onSelect: (station: OfficeStation, trigger: HTMLElement | null) => void; anchor: (object: THREE.Object3D | null) => void; prayerSessionStart: number; prayerCycleDuration: number; onPrayerReady: (id: string) => void }) {
   const root = useRef<THREE.Group>(null)
   const body = useRef<THREE.Group>(null)
   const torso = useRef<THREE.Group>(null)
@@ -49,6 +49,7 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
   const [start] = useState<Vec3>(() => placement.position)
   const path = useRef<THREE.Vector3[]>([])
   const progress = useRef({ last: new THREE.Vector3(), stuckSeconds: 0 })
+  const prayerReadyReported = useRef(false)
   const destination = placement.position.join(',')
   const seed = useMemo(() => seedOf(station.id), [station.id])
   // Everything animated is eased towards its target each frame, so no pose ever snaps.
@@ -73,6 +74,9 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
     // placement.position is captured through `destination`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [destination])
+  useEffect(() => {
+    prayerReadyReported.current = false
+  }, [station.activity])
 
   useFrame((state, rawDelta) => {
     const group = root.current
@@ -171,6 +175,10 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
       group.rotation.y += angleTo(group.rotation.y, placement.facing) * (1 - Math.exp(-6 * delta))
     }
     const settled = arrived && Math.abs(angleTo(group.rotation.y, placement.facing)) < 0.35
+    if (station.activity.toLowerCase().includes('prayer') && settled && !walking && !prayerReadyReported.current) {
+      prayerReadyReported.current = true
+      onPrayerReady(station.id)
+    }
     s.sit = damp(s.sit, arrived && placement.seated && !placement.pose ? 1 : 0, 6, delta)
     s.floor = damp(s.floor, arrived && placement.pose === 'floor' ? 1 : 0, 5, delta)
     s.lie = damp(s.lie, arrived && settled && placement.pose === 'lie' ? 1 : 0, 3.2, delta)
@@ -188,7 +196,7 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
     const tapR = Math.max(0, Math.sin(t * 13.1 + 2)) * (0.55 + 0.45 * Math.sin(t * 6.3 + 1)) * (1 - think)
     const reviewing = station.state === 'Reviewing'
     const activity = station.activity.toLowerCase()
-    const praying = activity.includes('prayer') && settled && !walking
+    const praying = activity.includes('prayer') && prayerSessionStart > 0 && settled && !walking
     const eating = /eat|breakfast|lunch|dinner|snack/.test(activity)
     const drinking = /coffee|drink of water/.test(activity)
     const showering = /showering|brushing teeth/.test(activity)
@@ -715,7 +723,8 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
   const theme = themeOverride ?? documentTheme
   const [floor, setFloor] = useFloor()
   const [sleepMode, setSleepMode] = useStoredFlag(SLEEP_KEY)
-  const prayerSession = useRef({ key: '', startedAt: 0 })
+  const prayerSession = useRef({ key: '', startedAt: 0, ready: new Set<string>() })
+  const [, setPrayerSyncVersion] = useState(0)
   const now = useClock(2000)
   const scheduleMinute = jakartaMinuteOfDay(simulationNow)
   const stations = crew.map((station): SimulatedStation => {
@@ -738,10 +747,21 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
   })
   const prayerKey = stations.find((station) => /^(Fajr|Dhuhr|Asr|Maghrib|Isha) prayer$/.test(station.activity))?.activity ?? ''
   if (!prayerKey) {
-    prayerSession.current.key = ''
-    prayerSession.current.startedAt = 0
+    if (prayerSession.current.key) prayerSession.current = { key: '', startedAt: 0, ready: new Set<string>() }
   } else if (prayerSession.current.key !== prayerKey) {
-    prayerSession.current = { key: prayerKey, startedAt: performance.now() / 1000 + (2 * 60 / Math.max(simulationRate, 1)) }
+    // Do not start the prayer clock from the schedule boundary. All participants must first
+    // physically reach their reserved mat/standing spot; the last arrival starts the shared phase.
+    prayerSession.current = { key: prayerKey, startedAt: 0, ready: new Set<string>() }
+  }
+  const prayerParticipants = stations.filter((station) => station.activity === prayerKey).length
+  const onPrayerReady = (id: string) => {
+    const session = prayerSession.current
+    if (!prayerKey || session.key !== prayerKey || session.startedAt > 0) return
+    session.ready.add(id)
+    if (session.ready.size >= prayerParticipants) {
+      session.startedAt = performance.now() / 1000
+      setPrayerSyncVersion((version) => version + 1)
+    }
   }
   const prayerSessionStart = prayerSession.current.startedAt
   const prayerCycleDuration = Math.max(3, 18 * 60 / Math.max(simulationRate, 1))
@@ -819,7 +839,7 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
       <Lighting theme={theme}/>
       <Environment night={theme === 'dark'} layout={layout} floor={floor}/>
       {floor === 1 && layout.desks.map((position, index) => <WorkDesk key={index} position={position} active={occupiedSeats.has(index + 1)} withChair/>)}
-      {stations.map((station) => <Character key={station.id} station={station} placement={placement(station)} layout={layout} floor={floor} onSelect={onSelect} prayerSessionStart={prayerSessionStart} prayerCycleDuration={prayerCycleDuration} anchor={register(anchors, `agent-${station.id}`)}/>)}
+      {stations.map((station) => <Character key={station.id} station={station} placement={placement(station)} layout={layout} floor={floor} onSelect={onSelect} prayerSessionStart={prayerSessionStart} prayerCycleDuration={prayerCycleDuration} onPrayerReady={onPrayerReady} anchor={register(anchors, `agent-${station.id}`)}/>)}
       <LabelProjector anchors={anchors} labels={labels}/>
       <Controls key={layout.deskCount} ref={view} panMode={panMode} keyTarget={keyTarget} layout={layout} elevation={floor === 2 ? FLOOR_HEIGHT : 0}/>
     </Canvas>
