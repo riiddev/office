@@ -8,7 +8,7 @@ const material = (color, roughness = 0.85, extra = {}) => new THREE.MeshStandard
 export function createOffice(host, { onSelect } = {}) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#e8e8d8');
-  scene.fog = new THREE.Fog('#e8e8d8', 25, 55);
+  scene.fog = new THREE.Fog('#d8d9cc', 36, 72);
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
   camera.position.set(23, 20, 25);
@@ -19,7 +19,7 @@ export function createOffice(host, { onSelect } = {}) {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.12;
+  renderer.toneMappingExposure = 0.82;
   renderer.domElement.className = 'office-canvas';
   host.appendChild(renderer.domElement);
 
@@ -29,10 +29,10 @@ export function createOffice(host, { onSelect } = {}) {
   controls.minDistance = 12;
   controls.maxDistance = 44;
   controls.maxPolarAngle = Math.PI * 0.47;
-  controls.target.set(0, 1.1, 0);
+  controls.target.set(0, 1.0, 2.2);
 
-  scene.add(new THREE.HemisphereLight('#fff7df', '#7c8878', 2.05));
-  const sun = new THREE.DirectionalLight('#fff0cd', 3.2);
+  scene.add(new THREE.HemisphereLight('#fff7eb', '#65715d', 1.05));
+  const sun = new THREE.DirectionalLight('#fff1da', 1.85);
   sun.position.set(-7, 15, 8);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -43,21 +43,21 @@ export function createOffice(host, { onSelect } = {}) {
   sun.shadow.bias = -0.0003;
   scene.add(sun);
 
-  const warmFill = new THREE.PointLight('#ffd5a0', 0.55, 20);
+  const warmFill = new THREE.PointLight('#ffd5a0', 0.2, 18);
   warmFill.position.set(0, 5, 0);
   scene.add(warmFill);
 
   const mats = {
-    grass: material('#abb99a'),
-    floor: material('#e6d5b9'),
-    wall: material('#f0e7d7'),
+    grass: material('#93a57d'),
+    floor: material('#cdbda2'),
+    wall: material('#dfd4c3'),
     wood: material('#b77e52'),
-    woodLight: material('#d5aa7c'),
+    woodLight: material('#c89a68'),
     darkWood: material('#80563d'),
     green: material('#88a47d'),
     leaf: material('#5f8966'),
     leafLight: material('#9aba83'),
-    fabric: material('#d8bba1'),
+    fabric: material('#cdb095'),
     sofa: material('#76958a'),
     terracotta: material('#d68c6a'),
     cream: material('#faf4e7'),
@@ -108,16 +108,18 @@ export function createOffice(host, { onSelect } = {}) {
   };
 
   // Floating patch of grass and a slightly raised wooden floor.
-  box(scene, 'garden platform', [36, 0.36, 29], [0, -0.28, 2], mats.grass);
-  box(scene, 'wood floor', [26, 0.22, 15.4], [0, -0.02, 0], mats.floor);
-  box(scene, 'front step', [7, 0.22, 0.72], [0, -0.12, 8.05], mats.woodLight);
+  box(scene, 'garden platform', [40, 0.36, 30], [0, -0.28, 2.5], mats.grass);
+  box(scene, 'wood floor', [26, 0.22, 18], [0, -0.02, 1.2], mats.floor);
+  box(scene, 'front step', [7, 0.22, 0.72], [0, -0.12, 10.25], mats.woodLight);
+  // Broad circulation spine: keep the main route visually readable and open.
+  box(scene, 'central corridor runner', [22, 0.035, 1.18], [0, 0.105, 0.78], material('#b8b29b'));
 
   // Expanded dollhouse shell: the front stays open, with a wider wing for the team.
   box(scene, 'back wall', [26, 4.3, 0.22], [0, 2.1, -7.62], mats.wall);
-  box(scene, 'left wall', [0.22, 4.3, 15.4], [-13.02, 2.1, 0], mats.wall);
-  box(scene, 'right low wall', [0.22, 1.3, 15.4], [13.02, 0.65, 0], mats.wall);
+  box(scene, 'left wall', [0.22, 4.3, 18], [-13.02, 2.1, 1.2], mats.wall);
+  box(scene, 'right low wall', [0.22, 1.3, 18], [13.02, 0.65, 1.2], mats.wall);
   box(scene, 'back wood trim', [26.2, 0.2, 0.32], [0, 4.22, -7.58], mats.woodLight);
-  box(scene, 'left wood trim', [0.32, 0.2, 15.5], [-13.02, 4.22, 0], mats.woodLight);
+  box(scene, 'left wood trim', [0.32, 0.2, 18.1], [-13.02, 4.22, 1.2], mats.woodLight);
 
   // A wider window wall makes the office feel bright instead of boxed in.
   box(scene, 'window glass', [10.8, 2.45, 0.09], [-3.1, 2.55, -7.47], mats.glass, { castShadow: false });
@@ -201,7 +203,7 @@ export function createOffice(host, { onSelect } = {}) {
   addPlant(12.0, 1.8, 0.7);
 
   // Small reading / meeting table with round poufs.
-  const meeting = group(scene, 'reading corner', [-0.5, 0, -0.2]);
+  const meeting = group(scene, 'reading corner', [-5.0, 0, -0.25]);
   cylinder(meeting, 'round tabletop', 1.05, 1.05, 0.16, [0, 0.95, 0], mats.woodLight, 24);
   cylinder(meeting, 'table leg', 0.13, 0.25, 0.88, [0, 0.47, 0], mats.wood);
   for (let i = 0; i < 3; i++) {
@@ -212,7 +214,7 @@ export function createOffice(host, { onSelect } = {}) {
   sphere(meeting, 'small plant', 0.26, [0.43, 1.48, -0.05], mats.leafLight, [1, 1.35, 1]);
 
   // Cozy lounge: sofa, cushions, coffee table, rug, books and standing lamp.
-  const lounge = group(scene, 'lounge', [5.9, 0, -0.65]);
+  const lounge = group(scene, 'lounge', [5.9, 0, -1.35]);
   box(lounge, 'rug', [5.3, 0.055, 3.4], [0, 0.12, 0], material('#d8bfa3'));
   box(lounge, 'sofa base', [3.5, 0.55, 1.16], [0, 0.5, -0.45], mats.sofa);
   box(lounge, 'sofa back', [3.5, 1.05, 0.28], [0, 0.98, -0.95], mats.sofa);
@@ -291,16 +293,16 @@ export function createOffice(host, { onSelect } = {}) {
 
   // Partitioned dining room: dining table, chairs, plates, fruit and a serving counter.
   const dining = group(scene, 'dining room', [5.15, 0, 6.08]);
-  box(dining, 'dining zone rug', [4.8, 0.06, 3.15], [0, 0.09, 0], material('#d8cbb3'));
-  // Low glass-and-wood partitions leave a clear door from the main aisle.
-  box(dining, 'dining side left lower', [0.16, 1.45, 2.65], [-2.4, 0.75, 0.12], mats.wood);
-  box(dining, 'dining side left glass', [0.055, 0.82, 2.65], [-2.4, 1.86, 0.12], mats.glass);
-  box(dining, 'dining side right lower', [0.16, 1.45, 2.65], [2.4, 0.75, 0.12], mats.wood);
-  box(dining, 'dining side right glass', [0.055, 0.82, 2.65], [2.4, 1.86, 0.12], mats.glass);
-  box(dining, 'dining rear left lower', [1.72, 1.45, 0.16], [-1.53, 0.75, -1.42], mats.wood);
-  box(dining, 'dining rear left glass', [1.72, 0.82, 0.055], [-1.53, 1.86, -1.42], mats.glass);
-  box(dining, 'dining rear right lower', [1.72, 1.45, 0.16], [1.53, 0.75, -1.42], mats.wood);
-  box(dining, 'dining rear right glass', [1.72, 0.82, 0.055], [1.53, 1.86, -1.42], mats.glass);
+  box(dining, 'dining zone rug', [6.6, 0.06, 3.15], [0, 0.09, 0], material('#d8cbb3'));
+  // Wider glass-and-wood walls leave proper walking clearance around the table.
+  box(dining, 'dining side left lower', [0.16, 1.45, 2.65], [-3.45, 0.75, 0.12], mats.wood);
+  box(dining, 'dining side left glass', [0.055, 0.82, 2.65], [-3.45, 1.86, 0.12], mats.glass);
+  box(dining, 'dining side right lower', [0.16, 1.45, 2.65], [3.45, 0.75, 0.12], mats.wood);
+  box(dining, 'dining side right glass', [0.055, 0.82, 2.65], [3.45, 1.86, 0.12], mats.glass);
+  box(dining, 'dining rear left lower', [1.4, 1.45, 0.16], [-1.4, 0.75, -1.42], mats.wood);
+  box(dining, 'dining rear left glass', [1.4, 0.82, 0.055], [-1.4, 1.86, -1.42], mats.glass);
+  box(dining, 'dining rear right lower', [1.4, 1.45, 0.16], [1.4, 0.75, -1.42], mats.wood);
+  box(dining, 'dining rear right glass', [1.4, 0.82, 0.055], [1.4, 1.86, -1.42], mats.glass);
   box(dining, 'dining tabletop', [2.15, 0.16, 1.15], [0, 0.93, 0.05], mats.woodLight);
   for (const x of [-0.88, 0.88]) for (const z of [-0.37, 0.42]) box(dining, 'dining table leg', [0.12, 0.84, 0.12], [x, 0.43, z], mats.darkWood);
   const diningChairs = [
@@ -323,7 +325,7 @@ export function createOffice(host, { onSelect } = {}) {
   addPlant(8.45, 6.25, 0.65);
 
   // Outdoor pool deck next to the HQ entrance.
-  const poolDeck = group(scene, 'pool deck', [11.35, 0, 10.55]);
+  const poolDeck = group(scene, 'pool deck', [14.5, 0, 13.25]);
   box(poolDeck, 'pool patio', [8.1, 0.16, 6.0], [0, -0.04, 0], material('#d8c8ab'));
   box(poolDeck, 'pool basin', [5.15, 0.42, 3.35], [0, 0.17, -0.1], material('#668f96'));
   box(poolDeck, 'pool water', [4.73, 0.055, 2.92], [0, 0.4, -0.1], mats.poolWater);
@@ -552,15 +554,15 @@ export function createOffice(host, { onSelect } = {}) {
   // walking through desks, chairs, walls, shower fixtures, or pool water.
   const navStep = 0.4;
   const navMinX = -12.45;
-  const navMaxX = 15.65;
+  const navMaxX = 19.2;
   const navMinZ = -8.0;
-  const navMaxZ = 14.4;
+  const navMaxZ = 16.5;
   const navWidth = Math.floor((navMaxX - navMinX) / navStep) + 1;
   const navDepth = Math.floor((navMaxZ - navMinZ) / navStep) + 1;
   const navBlockers = [
     // Outer room shell.
-    { x1: -13.0, x2: -12.52, z1: -7.85, z2: 7.82 },
-    { x1: 12.52, x2: 13.0, z1: -7.85, z2: 7.82 },
+    { x1: -13.0, x2: -12.52, z1: -7.85, z2: 10.2 },
+    { x1: 12.52, x2: 13.0, z1: -7.85, z2: 10.2 },
     { x1: -13.0, x2: 13.0, z1: -7.85, z2: -7.42 },
     // Desk and chair envelopes, expanded with a walking clearance.
     { x1: -8.34, x2: -5.06, z1: -3.5, z2: -0.65 },
@@ -579,9 +581,9 @@ export function createOffice(host, { onSelect } = {}) {
     { x1: -1.95, x2: 1.2, z1: -2.0, z2: 1.25 },
     { x1: -9.16, x2: -8.04, z1: -3.08, z2: -0.12 },
     // Actual lounge furniture footprints leave an aisle beside the sofa.
-    { x1: 3.86, x2: 7.92, z1: -2.4, z2: -0.22 },
-    { x1: 4.54, x2: 7.28, z1: -0.5, z2: 1.05 },
-    { x1: 7.55, x2: 8.48, z1: -1.82, z2: -0.45 },
+    { x1: 3.86, x2: 7.92, z1: -3.1, z2: -0.92 },
+    { x1: 4.54, x2: 7.28, z1: -1.2, z2: 0.35 },
+    { x1: 7.55, x2: 8.48, z1: -2.52, z2: -1.15 },
     // Divider panels between lounge and gaming room, with a walk-through gap.
     { x1: 3.2, x2: 5.55, z1: 0.72, z2: 1.38 },
     { x1: 6.45, x2: 8.98, z1: 0.72, z2: 1.38 },
@@ -614,20 +616,20 @@ export function createOffice(host, { onSelect } = {}) {
     // Meeting room furniture and chairs.
     { x1: 7.72, x2: 12.48, z1: -2.18, z2: 2.06 },
     // Dining room glass partitions and the table/chair cluster.
-    { x1: 2.57, x2: 2.9, z1: 4.58, z2: 7.58 },
-    { x1: 7.4, x2: 7.73, z1: 4.58, z2: 7.58 },
-    { x1: 2.42, x2: 4.42, z1: 4.46, z2: 4.78 },
-    { x1: 5.88, x2: 7.84, z1: 4.46, z2: 4.78 },
-    { x1: 3.22, x2: 7.08, z1: 4.76, z2: 7.52 },
+    { x1: 1.55, x2: 1.85, z1: 4.58, z2: 7.58 },
+    { x1: 8.45, x2: 8.75, z1: 4.58, z2: 7.58 },
+    { x1: 2.98, x2: 4.5, z1: 4.46, z2: 4.78 },
+    { x1: 5.8, x2: 7.32, z1: 4.46, z2: 4.78 },
+    { x1: 3.22, x2: 7.08, z1: 4.98, z2: 7.28 },
     // Pool water, coping, sunbeds and parasol. The surrounding deck stays walkable.
-    { x1: 8.63, x2: 14.08, z1: 8.7, z2: 12.35 },
-    { x1: 7.45, x2: 9.04, z1: 10.45, z2: 12.32 },
-    { x1: 13.65, x2: 15.28, z1: 10.45, z2: 12.32 },
-    { x1: 7.15, x2: 9.2, z1: 8.18, z2: 9.82 }
+    { x1: 11.7, x2: 17.35, z1: 11.35, z2: 15.1 },
+    { x1: 10.35, x2: 11.45, z1: 11.35, z2: 15.0 },
+    { x1: 17.55, x2: 18.7, z1: 11.35, z2: 15.0 },
+    { x1: 11.15, x2: 12.55, z1: 10.15, z2: 11.0 }
   ];
   const navBlockedAt = (x, z) => {
     if (x < navMinX || x > navMaxX || z < navMinZ || z > navMaxZ) return true;
-    if (z < 7.82 && (x < -12.48 || x > 12.48)) return true;
+    if (z < 10.0 && (x < -12.48 || x > 12.48)) return true;
     return navBlockers.some((r) => x >= r.x1 && x <= r.x2 && z >= r.z1 && z <= r.z2);
   };
   const navIndex = (ix, iz) => iz * navWidth + ix;
@@ -845,15 +847,15 @@ export function createOffice(host, { onSelect } = {}) {
     if (scene.fog) {
       scene.fog.color.set(fog);
     }
-    gsap.to(sun, { intensity: isNight ? 0.65 : 3.2, duration: 0.7 });
-    gsap.to(warmFill, { intensity: isNight ? 1.7 : 0.55, duration: 0.7 });
-    renderer.toneMappingExposure = isNight ? 0.95 : 1.12;
+    gsap.to(sun, { intensity: isNight ? 0.42 : 1.85, duration: 0.7 });
+    gsap.to(warmFill, { intensity: isNight ? 0.75 : 0.2, duration: 0.7 });
+    renderer.toneMappingExposure = isNight ? 0.7 : 0.82;
     mats.lamp.emissiveIntensity = isNight ? 1.25 : 0.45;
     mats.lamp.color.set(isNight ? '#fff0bb' : '#ffdf99');
   };
 
   const roomViews = {
-    all: { position: [25, 22, 28], target: [0, 1.05, 1.4] },
+    all: { position: [27, 21, 31], target: [0, 1.0, 3.1] },
     boss: { position: [10.5, 8.5, 13], target: [-1.65, 1.05, 3.3] },
     studio: { position: [12, 10, 16], target: [0.2, 1, -3.0] },
     meeting: { position: [14, 10, 13], target: [10.1, 1, 0.4] },
@@ -861,8 +863,8 @@ export function createOffice(host, { onSelect } = {}) {
     games: { position: [13, 9, 12], target: [6.2, 0.8, 2.0] },
     pantry: { position: [9, 9, 14], target: [-6.4, 1, 1.9] },
     bathroom: { position: [-2.5, 8.8, 13], target: [-10.5, 1.25, 5.0] },
-    dining: { position: [13, 9.5, 16], target: [5.15, 1, 6.0] },
-    pool: { position: [18.5, 10.5, 19.5], target: [11.35, 0.5, 10.55] }
+    dining: { position: [13, 9.5, 18], target: [5.15, 1, 6.0] },
+    pool: { position: [21, 11.5, 22], target: [14.5, 0.5, 13.25] }
   };
   const focusRoom = (room) => {
     const view = roomViews[room] || roomViews.all;
