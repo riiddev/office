@@ -212,12 +212,15 @@ function Musholla() {
   const back = MUSHOLLA.z - 2.35
   const front = MUSHOLLA.z + 2.35
   const doorwayHalf = 1.2
-  const mats = Array.from({ length: MUSHOLLA.capacity }, (_, index) => {
+  const mats = Array.from({ length: MUSHOLLA.capacity - 1 }, (_, index) => {
     const row = Math.floor(index / MUSHOLLA.columns)
     const column = index % MUSHOLLA.columns
+    const maxFollowers = MUSHOLLA.capacity - 1
+    const columnsInRow = row === MUSHOLLA.rows - 1 ? maxFollowers % MUSHOLLA.columns || MUSHOLLA.columns : MUSHOLLA.columns
+    const centeredColumn = column - (columnsInRow - 1) / 2
     return {
       index, row,
-      x: MUSHOLLA.x + (column - (MUSHOLLA.columns - 1) / 2) * MUSHOLLA.columnSpacing,
+      x: MUSHOLLA.x + centeredColumn * MUSHOLLA.columnSpacing,
       z: MUSHOLLA.z - 1.0 + row * MUSHOLLA.rowSpacing,
     }
   })
@@ -230,6 +233,13 @@ function Musholla() {
     {/* Mihrab marks the shared qibla direction. It sits on the back wall, away from the doorway. */}
     <RBox position={[MUSHOLLA.x, 0.9, back + 0.1]} size={[1.35, 1.05, 0.12]} radius={0.04} color="#285547"/>
     <RBox position={[MUSHOLLA.x, 1.05, back + 0.17]} size={[0.72, 0.04, 0.035]} radius={0.01} color="#e5d4a3" shadow={false}/>
+    {/* Dedicated imam mat in front of the first saf; capacity counts it as seat one. */}
+    <group position={[MUSHOLLA.x, 0, MUSHOLLA.z - 1.72]}>
+      <RBox position={[0, 0.028, 0]} size={[0.68, 0.035, 0.82]} radius={0.025} color="#2d6c55" roughness={0.98}/>
+      <RBox position={[0, 0.049, -0.34]} size={[0.58, 0.008, 0.025]} radius={0.006} color="#d8c898" shadow={false}/>
+      <RBox position={[-0.27, 0.049, 0]} size={[0.025, 0.008, 0.76]} radius={0.006} color="#d8c898" shadow={false}/>
+      <RBox position={[0.27, 0.049, 0]} size={[0.025, 0.008, 0.76]} radius={0.006} color="#d8c898" shadow={false}/>
+    </group>
     {mats.map(({ index, row, x, z }) => <group key={index} position={[x, 0, z]}>
       <RBox position={[0, 0.028, 0]} size={[0.68, 0.035, 0.82]} radius={0.025} color={row % 2 === 0 ? '#4b8b71' : '#387761'} roughness={0.98}/>
       <RBox position={[0, 0.049, -0.34]} size={[0.58, 0.008, 0.025]} radius={0.006} color="#d8c898" shadow={false}/>
