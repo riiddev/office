@@ -320,7 +320,7 @@ export function createOffice(host, { onSelect } = {}) {
   for (let i = 0; i < 4; i++) sphere(dining, 'fruit', 0.08, [-0.12 + (i % 2) * 0.13, 1.18, -0.29 + Math.floor(i / 2) * 0.1], [mats.terracotta, mats.lamp, mats.leaf, mats.cream][i]);
   box(dining, 'serving sideboard', [1.1, 0.8, 0.54], [1.65, 0.45, -0.85], mats.wood);
   box(dining, 'serving counter top', [1.18, 0.1, 0.6], [1.65, 0.9, -0.85], mats.cream);
-  addPlant(7.45, 7.0, 0.65);
+  addPlant(8.45, 6.25, 0.65);
 
   // Outdoor pool deck next to the HQ entrance.
   const poolDeck = group(scene, 'pool deck', [11.35, 0, 10.55]);
@@ -544,7 +544,7 @@ export function createOffice(host, { onSelect } = {}) {
     [[-7.8, 0, 3.8], [-7.5, 0, 6.2], [-7.8, 0, 6.7], [-8.0, 0, 4.0]],
     [[3.2, 0, -0.9], [3.4, 0, 1.3], [2.1, 0, 1.4], [3.2, 0, -0.9]],
     [[8.4, 0, -2.8], [8.4, 0, -2.3], [8.4, 0, -2.8], [9.1, 0, -2.3]],
-    [[9.2, 0, 2.8], [11.5, 0, 2.8], [12.0, 0, -2.9], [9.4, 0, -2.9]],
+    [[9.4, 0, 3.2], [9.4, 0, 6.2], [11.6, 0, 6.2], [9.4, 0, 3.2]],
     [[-1.8, 0, -1.2], [0.2, 0, -1.0], [1.6, 0, -1.0], [-0.2, 0, -1.3]]
   ];
   // Navigation mesh: padded furniture footprints and room partitions. All agents
