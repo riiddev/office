@@ -193,6 +193,8 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
     const drinking = /coffee|drink of water/.test(activity)
     const showering = /showering|brushing teeth/.test(activity)
     const playing = /playing games/.test(activity)
+    const usingPhone = /checking phone|messaging colleagues/.test(activity)
+    const clearingDishes = /clearing .* dishes|wiping the table|tidying the table/.test(activity)
     const makingBed = /making the bed/.test(activity)
     const reading = /reading/.test(activity)
     const watchingTv = /watching tv/.test(activity)
@@ -267,11 +269,23 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
       headPitch = 0.02
       headYaw = Math.sin(t * 0.33 + seed) * 0.08
     }
+    if (usingPhone && !walking) {
+      armR = -0.95 + Math.sin(t * 2.8 + seed) * 0.08
+      armL = -0.35
+      headPitch = 0.28
+      headYaw = Math.sin(t * 0.45 + seed) * 0.06
+    }
+    if (clearingDishes && !walking) {
+      armL = -0.55 + Math.sin(t * 2.0 + seed) * 0.35
+      armR = -0.55 + Math.sin(t * 2.4 + seed + 1) * 0.35
+      armLz = 0.14; armRz = -0.14
+      headPitch = 0.18
+    }
     let prayerStage: 'qiyam' | 'ruku' | 'itidal' | 'sujud' | 'sitting' | 'final-sitting' = 'qiyam'
     let torsoTarget = 0
     let prayerYTarget = 0
-    if (prayerCycle >= 3 && prayerCycle < 5) prayerStage = 'ruku'
-    else if (prayerCycle >= 5 && prayerCycle < 6.2) prayerStage = 'itidal'
+    if ((prayerCycle >= 3 && prayerCycle < 5) || (prayerCycle >= 14.5 && prayerCycle < 16.5)) prayerStage = 'ruku'
+    else if ((prayerCycle >= 5 && prayerCycle < 6.2) || (prayerCycle >= 16.5 && prayerCycle < 17.8)) prayerStage = 'itidal'
     else if ((prayerCycle >= 6.2 && prayerCycle < 8.2) || (prayerCycle >= 9.6 && prayerCycle < 11.6) || (prayerCycle >= 17.8 && prayerCycle < 19.8) || (prayerCycle >= 21.2 && prayerCycle < 23.2)) prayerStage = 'sujud'
     else if ((prayerCycle >= 8.2 && prayerCycle < 9.6) || (prayerCycle >= 19.8 && prayerCycle < 21.2)) prayerStage = 'sitting'
     else if (prayerCycle >= 23.2) prayerStage = 'final-sitting'
@@ -605,7 +619,9 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
     if (turn >= count) return action('bedroom', 'Idle', 'Getting dressed for work', 'Getting ready')
     return action('bathroom-queue', 'Idle', `Waiting in bathroom queue · ${seat - turn - 1}`, 'In queue', seat - turn - 2)
   }
-  if (minute < 7 * 60) return action('dining', 'Idle', 'Breakfast · eating and chatting', 'Breakfast')
+  if (minute < 7 * 60) return minute >= 6 * 60 + 50
+    ? action('dining', 'Idle', 'Clearing breakfast dishes · wiping the table', 'Tidying dining area')
+    : action('dining', 'Idle', 'Breakfast · eating and chatting', 'Breakfast')
   if (minute < 8 * 60) {
     return minute < 7 * 60 + 20
       ? action('bedroom', 'Idle', 'Making the bed · getting dressed', 'Morning prep')
@@ -614,7 +630,9 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
   if (minute >= PRAYER_TIMES.dhuhr.start - 10 && minute < PRAYER_TIMES.dhuhr.start) return headingToPrayer()
   if (minute < PRAYER_TIMES.dhuhr.start) return work()
   if (minute < PRAYER_TIMES.dhuhr.end) return prayer('Dhuhr prayer')
-  if (minute < 14 * 60) return action('dining', 'Idle', 'Lunch · eating with colleagues', 'Lunch break')
+  if (minute < 14 * 60) return minute >= 13 * 60 + 50
+    ? action('dining', 'Idle', 'Clearing lunch dishes · wiping the table', 'Tidying dining area')
+    : action('dining', 'Idle', 'Lunch · eating with colleagues', 'Lunch break')
   if (minute < 15 * 60 + 30) {
     const block = Math.floor((minute - 14 * 60) / 30)
     const joinsMeeting = (seat + block) % 3 === 0
@@ -635,17 +653,20 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
   }
   if (minute < PRAYER_TIMES.maghrib.start) return headingToPrayer()
   if (minute < PRAYER_TIMES.maghrib.end) return prayer('Maghrib prayer')
-  if (minute < PRAYER_TIMES.isha.start - 10) return action('dining', 'Idle', 'Dinner · eating and talking', 'Dinner')
+  if (minute < PRAYER_TIMES.isha.start - 10) return minute >= PRAYER_TIMES.isha.start - 15
+    ? action('dining', 'Idle', 'Clearing dinner dishes · tidying the table', 'Tidying dining area')
+    : action('dining', 'Idle', 'Dinner · eating and talking', 'Dinner')
   if (minute < PRAYER_TIMES.isha.start) return headingToPrayer()
   if (minute < PRAYER_TIMES.isha.end) return prayer('Isha prayer')
   if (minute < 21 * 60 + 30) {
     const offset = Math.floor((minute - PRAYER_TIMES.isha.end) / 20)
     const stop = choice(['lounge', 'game', 'arcade', 'balkon', 'dining'], offset)
-    const activity = stop === 'lounge' ? 'Watching TV and chatting'
+    const activity = offset % 5 === 4 ? 'Checking phone and messaging colleagues'
+      : stop === 'lounge' ? 'Watching TV and chatting'
       : stop === 'game' || stop === 'arcade' ? 'Playing games together'
       : stop === 'balkon' ? 'Reading and relaxing on the balcony'
       : 'Relaxing around the dining tables'
-    return action(stop, 'Idle', activity, 'Leisure')
+    return action(offset % 5 === 4 ? choice(['lounge', 'balkon']) : stop, 'Idle', activity, 'Leisure')
   }
   if (minute < 22 * 60) {
     const turn = Math.floor((minute - (21 * 60 + 30)) / 3)
