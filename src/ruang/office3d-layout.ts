@@ -147,11 +147,15 @@ export function diningSpot(index: number): Placement {
   return upstairs(x, z, frontSide ? 0 : Math.PI, { seated: true, label: `Dining table ${tableIndex + 1} · seat ${seat + 1}` })
 }
 
-/** Bathroom queue slots sit outside the door in a staggered line without blocking the stair aisle. */
+/** Bathroom queue slots form a short two-column waiting bay east of the dining furniture. */
 export function bathroomQueueSpot(index: number): Placement {
-  const column = index % 6
-  const row = Math.floor(index / 6)
-  return upstairs(7.15, -1.55 + index * 0.9, Math.PI, { label: `Bathroom queue · ${index + 1}` })
+  const row = Math.floor(index / 2)
+  const column = index % 2
+  // Alternate the front-door side first, then zig-zag toward the clear side lane. This prevents a
+  // long queue from spilling onto the balcony or across dining seats when the crew is larger.
+  const x = column === 0 ? 8.55 : 7.65
+  const z = -1.55 + row * 0.86
+  return upstairs(x, z, Math.PI, { label: `Bathroom queue · ${index + 1}` })
 }
 /** Lying in a bed: feet at the foot end, head on the pillow by the back wall. */
 export const bedSpot = ([x, , z]: Vec3, label?: string): Placement => upstairs(x, z + 0.95, 0, { pose: 'lie', height: 0.5, ...(label ? { label } : {}) })
