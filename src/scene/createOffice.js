@@ -5,7 +5,7 @@ import { characters } from '../data/characters.js';
 
 const material = (color, roughness = 0.85, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness, ...extra });
 
-export function createOffice(host) {
+export function createOffice(host, { onSelect } = {}) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#e8e8d8');
   scene.fog = new THREE.Fog('#e8e8d8', 25, 55);
@@ -271,6 +271,16 @@ export function createOffice(host) {
     const face = material('#4b3b33');
     sphere(c, 'eye-left', 0.025, [-0.085, 1.27, 0.232], face, [1, 1, 0.5]);
     sphere(c, 'eye-right', 0.025, [0.085, 1.27, 0.232], face, [1, 1, 0.5]);
+    const stateColor = info.status === 'working' ? '#79b88a' : info.status === 'review' ? '#e0b46b' : info.status === 'blocked' ? '#d78370' : '#96a3b0';
+    const stateMaterial = new THREE.MeshStandardMaterial({ color: stateColor, emissive: stateColor, emissiveIntensity: 0.58, roughness: 0.35 });
+    const stateOrb = sphere(c, 'status-orb', 0.075, [0, 1.78, 0], stateMaterial);
+    const stateRing = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.018, 6, 14), stateMaterial);
+    stateRing.name = 'status-ring';
+    stateRing.position.set(0, 1.78, 0);
+    stateRing.rotation.x = Math.PI / 2;
+    c.add(stateRing);
+    c.userData.statusOrb = stateOrb;
+    c.userData.statusRing = stateRing;
     c.userData.motion = { points: waypoints[i], target: 1, speed: 0.45 + (i % 3) * 0.09, phase: i * 1.8, legs: [legL, legR], walkTimer: 1.2 + i * 0.7 };
     characterGroups.push(c);
   });
@@ -325,6 +335,34 @@ export function createOffice(host) {
   };
   const resetView = () => focusRoom('all');
 
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+  let pointerDown = null;
+  const onPointerDown = (event) => {
+    if (event.button !== 0) return;
+    pointerDown = { x: event.clientX, y: event.clientY };
+  };
+  const onPointerUp = (event) => {
+    if (!pointerDown) return;
+    const distance = Math.hypot(event.clientX - pointerDown.x, event.clientY - pointerDown.y);
+    pointerDown = null;
+    if (distance > 6) return;
+    const bounds = renderer.domElement.getBoundingClientRect();
+    pointer.x = ((event.clientX - bounds.left) / bounds.width) * 2 - 1;
+    pointer.y = -((event.clientY - bounds.top) / bounds.height) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects(characterGroups, true);
+    if (!hits.length) return;
+    let parent = hits[0].object;
+    while (parent && !parent.userData.character) parent = parent.parent;
+    if (parent?.userData.character && typeof onSelect === 'function') {
+      onSelect(parent.userData.character.id);
+    }
+  };
+  renderer.domElement.addEventListener('pointerdown', onPointerDown);
+  renderer.domElement.addEventListener('pointerup', onPointerUp);
+  renderer.domElement.style.cursor = 'grab';
+
   let animationFrame = 0;
   const clock = new THREE.Clock();
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -334,6 +372,11 @@ export function createOffice(host) {
     const elapsed = clock.elapsedTime;
     characterGroups.forEach((character, i) => {
       const motion = character.userData.motion;
+      if (character.userData.statusOrb && character.userData.statusRing) {
+        const pulse = 1 + Math.sin(elapsed * 2.7 + motion.phase) * 0.08;
+        character.userData.statusOrb.scale.setScalar(pulse);
+        character.userData.statusRing.rotation.z += delta * 0.2;
+      }
       const target = motion.points[motion.target];
       const dx = target[0] - character.position.x;
       const dz = target[2] - character.position.z;
@@ -369,6 +412,8 @@ export function createOffice(host) {
     destroy() {
       cancelAnimationFrame(animationFrame);
       resizeObserver.disconnect();
+      renderer.domElement.removeEventListener('pointerdown', onPointerDown);
+      renderer.domElement.removeEventListener('pointerup', onPointerUp);
       controls.dispose();
       renderer.dispose();
       host.removeChild(renderer.domElement);
