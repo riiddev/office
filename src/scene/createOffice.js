@@ -240,7 +240,9 @@ export function createOffice(host, { onSelect } = {}) {
   box(game, 'console display', [1.13, 0.62, 0.035], [0, 1.15, 1.005], material('#9fc9ad', 0.25, { emissive: '#6d9b8c', emissiveIntensity: 0.35 }));
   box(game, 'console shelf', [1.8, 0.16, 0.5], [0, 0.55, 1.08], mats.woodLight);
   for (let i = 0; i < 2; i++) {
-    const bean = sphere(game, 'bean bag', 0.55, [i ? 1.3 : -1.35, 0.38, 1.05], i ? mats.terracotta : mats.sofa, [1.1, 0.7, 1.1]);
+    // Keep the beanbags in the two back corners so the middle walking lane
+    // stays open between the arcade cabinets and the console.
+    sphere(game, 'bean bag', 0.48, [i ? 1.85 : -1.85, 0.36, 1.05], i ? mats.terracotta : mats.sofa, [1.0, 0.68, 1.0]);
   }
 
   // Pantry with fridge, counter, coffee machine and tiny galon.
@@ -585,9 +587,9 @@ export function createOffice(host, { onSelect } = {}) {
     // Arcade cabinets, console and beanbags; the carpet itself is walkable.
     { x1: 4.55, x2: 5.55, z1: 1.24, z2: 2.44 },
     { x1: 6.25, x2: 7.25, z1: 1.24, z2: 2.44 },
-    { x1: 4.0, x2: 5.7, z1: 2.95, z2: 4.55 },
-    { x1: 6.65, x2: 8.35, z1: 2.95, z2: 4.55 },
-    { x1: 5.0, x2: 7.4, z1: 3.3, z2: 4.4 },
+    { x1: 3.75, x2: 4.8, z1: 3.18, z2: 4.3 },
+    { x1: 7.6, x2: 8.65, z1: 3.18, z2: 4.3 },
+    { x1: 5.25, x2: 7.15, z1: 3.5, z2: 4.1 },
     // Pantry counters / fridge.
     { x1: -8.1, x2: -4.3, z1: 0.9, z2: 3.15 },
     // Executive desk and visitor seating.
