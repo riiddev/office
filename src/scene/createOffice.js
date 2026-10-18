@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import gsap from 'gsap';
-import { characters } from '../data/characters.js';
+import { agents, characters } from '../data/characters.js';
 
 const material = (color, roughness = 0.85, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness, ...extra });
 
@@ -11,7 +11,7 @@ export function createOffice(host, { onSelect } = {}) {
   scene.fog = new THREE.Fog('#e8e8d8', 25, 55);
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-  camera.position.set(17, 17, 21);
+  camera.position.set(23, 20, 25);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -27,7 +27,7 @@ export function createOffice(host, { onSelect } = {}) {
   controls.enableDamping = true;
   controls.dampingFactor = 0.06;
   controls.minDistance = 12;
-  controls.maxDistance = 36;
+  controls.maxDistance = 44;
   controls.maxPolarAngle = Math.PI * 0.47;
   controls.target.set(0, 1.1, 0);
 
@@ -36,10 +36,10 @@ export function createOffice(host, { onSelect } = {}) {
   sun.position.set(-7, 15, 8);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.left = -18;
-  sun.shadow.camera.right = 18;
-  sun.shadow.camera.top = 18;
-  sun.shadow.camera.bottom = -18;
+  sun.shadow.camera.left = -24;
+  sun.shadow.camera.right = 24;
+  sun.shadow.camera.top = 22;
+  sun.shadow.camera.bottom = -22;
   sun.shadow.bias = -0.0003;
   scene.add(sun);
 
@@ -106,29 +106,29 @@ export function createOffice(host, { onSelect } = {}) {
   };
 
   // Floating patch of grass and a slightly raised wooden floor.
-  box(scene, 'garden platform', [23, 0.36, 15], [0, -0.28, 0], mats.grass);
-  box(scene, 'wood floor', [19.2, 0.22, 11.2], [0, -0.02, 0], mats.floor);
-  box(scene, 'front step', [5, 0.22, 0.65], [0, -0.12, 5.9], mats.woodLight);
+  box(scene, 'garden platform', [29, 0.36, 19], [0, -0.28, 0], mats.grass);
+  box(scene, 'wood floor', [26, 0.22, 15.4], [0, -0.02, 0], mats.floor);
+  box(scene, 'front step', [7, 0.22, 0.72], [0, -0.12, 8.05], mats.woodLight);
 
-  // Three walls leave the front open like a miniature dollhouse.
-  box(scene, 'back wall', [19.2, 4.3, 0.22], [0, 2.1, -5.56], mats.wall);
-  box(scene, 'left wall', [0.22, 4.3, 11.2], [-9.62, 2.1, 0], mats.wall);
-  box(scene, 'right low wall', [0.22, 1.3, 11.2], [9.62, 0.65, 0], mats.wall);
-  box(scene, 'back wood trim', [19.35, 0.2, 0.32], [0, 4.22, -5.52], mats.woodLight);
-  box(scene, 'left wood trim', [0.32, 0.2, 11.3], [-9.62, 4.22, 0], mats.woodLight);
+  // Expanded dollhouse shell: the front stays open, with a wider wing for the team.
+  box(scene, 'back wall', [26, 4.3, 0.22], [0, 2.1, -7.62], mats.wall);
+  box(scene, 'left wall', [0.22, 4.3, 15.4], [-13.02, 2.1, 0], mats.wall);
+  box(scene, 'right low wall', [0.22, 1.3, 15.4], [13.02, 0.65, 0], mats.wall);
+  box(scene, 'back wood trim', [26.2, 0.2, 0.32], [0, 4.22, -7.58], mats.woodLight);
+  box(scene, 'left wood trim', [0.32, 0.2, 15.5], [-13.02, 4.22, 0], mats.woodLight);
 
-  // Big window wall with wood mullions and a view of rounded hills.
-  box(scene, 'window glass', [8.5, 2.45, 0.09], [-3.8, 2.55, -5.41], mats.glass, { castShadow: false });
-  for (let i = 0; i < 5; i++) box(scene, 'window mullion', [0.09, 2.55, 0.12], [-8.05 + i * 2.12, 2.55, -5.31], mats.woodLight);
-  box(scene, 'window sill', [8.7, 0.12, 0.22], [-3.8, 1.25, -5.27], mats.wood);
-  const landscape = group(scene, 'outside landscape', [0, 0, -7.9]);
+  // A wider window wall makes the office feel bright instead of boxed in.
+  box(scene, 'window glass', [10.8, 2.45, 0.09], [-3.1, 2.55, -7.47], mats.glass, { castShadow: false });
+  for (let i = 0; i < 6; i++) box(scene, 'window mullion', [0.09, 2.55, 0.12], [-8.05 + i * 2.0, 2.55, -7.36], mats.woodLight);
+  box(scene, 'window sill', [10.95, 0.12, 0.22], [-3.1, 1.25, -7.32], mats.wood);
+  const landscape = group(scene, 'outside landscape', [0, 0, -10.1]);
   sphere(landscape, 'hill', 3.5, [-5, 0.7, 0], material('#d4cf9c'), [1.4, 0.35, 0.14]);
   sphere(landscape, 'hill', 4, [1.5, 0.5, -0.1], material('#a7bd96'), [1.1, 0.35, 0.14]);
   sphere(landscape, 'hill', 3, [6, 0.8, 0], material('#e4c49b'), [1.4, 0.35, 0.14]);
 
   // Structural accent beams and a few indoor plants.
-  box(scene, 'beam one', [0.12, 3.9, 0.14], [-8.8, 2, -5.25], mats.wood);
-  box(scene, 'beam two', [0.12, 3.9, 0.14], [1.8, 2, -5.25], mats.wood);
+  box(scene, 'beam one', [0.12, 3.9, 0.14], [-11.8, 2, -7.24], mats.wood);
+  box(scene, 'beam two', [0.12, 3.9, 0.14], [2.7, 2, -7.24], mats.wood);
   const addPlant = (x, z, size = 1) => {
     const p = group(scene, 'potted plant', [x, 0.12, z]);
     cylinder(p, 'pot', 0.25 * size, 0.3 * size, 0.42 * size, [0, 0.21 * size, 0], mats.terracotta);
@@ -139,10 +139,10 @@ export function createOffice(host, { onSelect } = {}) {
     }
     cylinder(p, 'stem', 0.035 * size, 0.05 * size, 0.7 * size, [0, 0.72 * size, 0], mats.leaf);
   };
-  addPlant(-8.55, -4.7, 1.1);
-  addPlant(-8.4, 4.6, 1.15);
-  addPlant(8.45, -4.55, 0.95);
-  addPlant(8.4, 4.4, 1.05);
+  addPlant(-11.9, -6.45, 1.15);
+  addPlant(-11.8, 6.35, 1.18);
+  addPlant(11.75, -6.35, 1.05);
+  addPlant(11.75, 6.25, 1.12);
 
   // Work desks, computers, task lights and comfy chairs.
   const makeDesk = (x, z, accent, label) => {
@@ -166,6 +166,35 @@ export function createOffice(host, { onSelect } = {}) {
   makeDesk(-6.7, -3.35, '#e8ae77', 'Creative');
   makeDesk(-3.5, -3.35, '#8fc3b5', 'Developer');
   makeDesk(-0.25, -3.35, '#b8a5dd', 'Designer');
+  makeDesk(3.0, -4.65, '#e6b172', 'Research pod');
+  makeDesk(6.05, -4.65, '#83a8d3', 'Design pod');
+  makeDesk(9.1, -4.65, '#80b6a4', 'Operations pod');
+
+  // A shared wall board for sprint notes and a room-wide planning surface.
+  box(scene, 'sprint board frame', [4.2, 1.85, 0.16], [6.7, 2.45, -7.4], mats.wood);
+  box(scene, 'sprint board', [3.95, 1.6, 0.045], [6.7, 2.45, -7.29], mats.cream);
+  for (let i = 0; i < 4; i++) {
+    box(scene, 'sprint note', [0.55, 0.32, 0.025], [5.45 + (i % 2) * 0.85, 2.55 + Math.floor(i / 2) * 0.48, -7.25],
+      [mats.terracotta, mats.leafLight, mats.lamp, mats.glass][i]);
+  }
+  box(scene, 'sprint marker rail', [2.5, 0.055, 0.05], [6.7, 1.63, -7.25], mats.metal);
+
+  // Extra team wing: conference table, rolling chairs, and a place to brainstorm.
+  const warRoom = group(scene, 'war room', [10.1, 0, 0.1]);
+  box(warRoom, 'war room rug', [4.8, 0.055, 4.1], [0, 0.11, 0], material('#c9d3bd'));
+  cylinder(warRoom, 'conference table top', 1.42, 1.42, 0.16, [0, 0.96, 0], mats.woodLight, 32);
+  cylinder(warRoom, 'conference table foot', 0.24, 0.33, 0.84, [0, 0.49, 0], mats.darkWood, 16);
+  for (let i = 0; i < 5; i++) {
+    const a = i * Math.PI * 2 / 5;
+    const chair = group(warRoom, 'meeting chair', [Math.cos(a) * 2.05, 0, Math.sin(a) * 1.68]);
+    box(chair, 'chair seat', [0.64, 0.15, 0.62], [0, 0.57, 0], [mats.sofa, mats.terracotta, mats.navy, mats.leaf, mats.fabric][i]);
+    box(chair, 'chair back', [0.64, 0.72, 0.14], [0, 0.97, -0.22], [mats.sofa, mats.terracotta, mats.navy, mats.leaf, mats.fabric][i]);
+    cylinder(chair, 'chair stem', 0.06, 0.06, 0.48, [0, 0.27, 0], mats.metal, 8);
+    box(chair, 'chair base', [0.54, 0.06, 0.5], [0, 0.06, 0], mats.metal);
+  }
+  box(warRoom, 'team screen frame', [2.0, 1.25, 0.12], [0, 1.8, -1.82], mats.navy);
+  box(warRoom, 'team screen', [1.78, 1.02, 0.035], [0, 1.82, -1.74], material('#9ed1c0', 0.25, { emissive: '#5b9f8e', emissiveIntensity: 0.38 }));
+  addPlant(12.0, 1.8, 0.7);
 
   // Small reading / meeting table with round poufs.
   const meeting = group(scene, 'reading corner', [2.9, 0, -2.8]);
@@ -228,6 +257,114 @@ export function createOffice(host, { onSelect } = {}) {
   cylinder(pantry, 'galon stand', 0.26, 0.26, 0.55, [1.25, 0.62, -0.2], mats.white, 12);
   box(pantry, 'galon tap', [0.16, 0.08, 0.17], [1.25, 0.79, 0.07], mats.navy);
 
+  // A dedicated founder zone: warm rug, executive desk, laptop, guest chairs,
+  // and a custom 3D Riiddev avatar based on the supplied character reference.
+  const bossZone = group(scene, 'boss office', [-1.65, 0, 3.75]);
+  box(bossZone, 'boss area rug', [5.2, 0.055, 3.7], [0, 0.11, -0.25], material('#d8c3a8'));
+  box(bossZone, 'executive desk top', [3.65, 0.17, 1.05], [0, 1.05, -1.25], mats.woodLight);
+  box(bossZone, 'executive desk front', [3.25, 0.66, 0.13], [0, 0.68, -0.73], mats.wood);
+  for (const x of [-1.48, 1.48]) for (const z of [-1.58, -0.96]) box(bossZone, 'executive desk leg', [0.11, 0.88, 0.11], [x, 0.46, z], mats.darkWood);
+  box(bossZone, 'executive monitor frame', [1.15, 0.72, 0.1], [0, 1.55, -1.55], mats.navy);
+  box(bossZone, 'executive monitor glow', [0.98, 0.55, 0.03], [0, 1.56, -1.49], material('#a4d4be', 0.24, { emissive: '#75b59b', emissiveIntensity: 0.5 }));
+  box(bossZone, 'executive monitor stand', [0.12, 0.2, 0.12], [0, 1.17, -1.54], mats.metal);
+  box(bossZone, 'boss keyboard', [0.72, 0.04, 0.23], [0, 1.16, -0.95], mats.cream);
+  box(bossZone, 'boss desk mat', [1.05, 0.025, 0.55], [0, 1.145, -0.92], mats.navy);
+  cylinder(bossZone, 'boss coffee mug', 0.09, 0.1, 0.16, [1.15, 1.22, -0.95], mats.terracotta, 12);
+  box(bossZone, 'nameplate', [1.35, 0.25, 0.07], [0, 0.82, -0.65], mats.navy);
+  box(bossZone, 'nameplate gold accent', [0.92, 0.035, 0.025], [0, 0.86, -0.605], mats.lamp);
+  for (const x of [-2.1, 2.1]) {
+    const guest = group(bossZone, 'guest chair', [x, 0, -0.02]);
+    box(guest, 'guest chair seat', [0.72, 0.15, 0.67], [0, 0.48, 0], mats.sofa);
+    box(guest, 'guest chair back', [0.72, 0.82, 0.15], [0, 0.9, -0.24], mats.sofa);
+    cylinder(guest, 'guest chair leg', 0.07, 0.07, 0.44, [0, 0.22, 0], mats.metal, 8);
+  }
+
+  // 3D avatar inspired by the reference: black hair, warm skin, navy jacket,
+  // cream trousers, monochrome sneakers, and white wired earbuds.
+  const bossRoot = group(scene, 'riiddev-founder-avatar', [-1.65, 0, 4.45]);
+  bossRoot.userData.character = agents.find((agent) => agent.id === 'boss');
+  const bossSkin = material('#ca8b79');
+  const bossHair = material('#241f20', 0.92);
+  const bossJacket = material('#292c51', 0.72);
+  const bossShirt = material('#fffdf7', 0.9);
+  const bossPants = material('#f0dfbd', 0.92);
+  const bossShoes = material('#1f2224', 0.7);
+  const bossSole = material('#fffdf9', 0.85);
+  const earbudMat = material('#fffdf9', 0.35);
+  const faceInk = material('#261e1d', 0.9);
+  const cableMat = material('#fffdf9', 0.38);
+  const goldMat = material('#d9b46e', 0.42, { metalness: 0.25 });
+  sphere(bossRoot, 'boss pants waist', 0.28, [0, 0.61, 0], bossPants, [1.25, 0.48, 0.9]);
+  sphere(bossRoot, 'boss left trouser', 0.22, [-0.155, 0.34, 0], bossPants, [0.72, 1.38, 0.78]);
+  sphere(bossRoot, 'boss right trouser', 0.22, [0.155, 0.34, 0], bossPants, [0.72, 1.38, 0.78]);
+  for (const x of [-0.155, 0.155]) {
+    sphere(bossRoot, 'sneaker sole', 0.15, [x, 0.055, 0.115], bossSole, [1.0, 0.34, 1.55]);
+    sphere(bossRoot, 'black sneaker', 0.15, [x, 0.11, 0.105], bossShoes, [1.0, 0.58, 1.45]);
+    sphere(bossRoot, 'white sneaker toe', 0.1, [x, 0.115, 0.255], bossSole, [1.0, 0.78, 0.9]);
+    for (let lace = 0; lace < 2; lace++) box(bossRoot, 'sneaker lace', [0.09, 0.012, 0.018], [x, 0.16 + lace * 0.025, 0.17 + lace * 0.055], bossSole);
+  }
+  sphere(bossRoot, 'white tee', 0.37, [0, 0.96, 0.005], bossShirt, [0.83, 1.13, 0.74]);
+  sphere(bossRoot, 'navy jacket body', 0.39, [0, 0.98, -0.005], bossJacket, [1.05, 1.08, 0.72]);
+  box(bossRoot, 'white shirt panel', [0.23, 0.58, 0.035], [0, 0.96, 0.276], bossShirt);
+  box(bossRoot, 'left jacket front', [0.16, 0.62, 0.05], [-0.185, 0.96, 0.265], bossJacket, { rotation: [0, 0, -0.08] });
+  box(bossRoot, 'right jacket front', [0.16, 0.62, 0.05], [0.185, 0.96, 0.265], bossJacket, { rotation: [0, 0, 0.08] });
+  box(bossRoot, 'jacket zipper', [0.018, 0.48, 0.018], [0, 0.92, 0.305], goldMat);
+  for (const side of [-1, 1]) {
+    sphere(bossRoot, 'jacket shoulder', 0.18, [side * 0.37, 1.17, -0.005], bossJacket, [0.95, 0.92, 0.95]);
+    sphere(bossRoot, 'jacket sleeve', 0.16, [side * 0.405, 0.91, 0.035], bossJacket, [0.78, 1.5, 0.78]);
+    sphere(bossRoot, 'jacket cuff', 0.11, [side * 0.32, 0.68, 0.14], bossJacket, [0.9, 0.72, 0.85]);
+    sphere(bossRoot, 'boss hand', 0.105, [side * 0.255, 0.59, 0.205], bossSkin, [0.92, 1.0, 0.8]);
+  }
+  const bossHead = group(bossRoot, 'boss animated head', [0, 0, 0]);
+  sphere(bossHead, 'hair silhouette', 0.38, [0, 1.78, -0.02], bossHair, [1.04, 0.94, 0.94]);
+  sphere(bossHead, 'face', 0.37, [0, 1.51, 0.075], bossSkin, [0.98, 1.1, 0.87]);
+  sphere(bossHead, 'left side hair', 0.15, [-0.32, 1.58, 0.03], bossHair, [0.72, 1.36, 0.98]);
+  sphere(bossHead, 'right side hair', 0.15, [0.32, 1.58, 0.03], bossHair, [0.72, 1.36, 0.98]);
+  sphere(bossHead, 'front fringe', 0.22, [0, 1.81, 0.2], bossHair, [1.45, 0.48, 0.58]);
+  sphere(bossHead, 'left fringe', 0.12, [-0.21, 1.73, 0.24], bossHair, [0.84, 0.7, 0.65]);
+  sphere(bossHead, 'right fringe', 0.12, [0.21, 1.73, 0.24], bossHair, [0.84, 0.7, 0.65]);
+  for (const x of [-0.36, 0.36]) {
+    sphere(bossHead, 'ear', 0.09, [x, 1.52, 0.07], bossSkin, [0.7, 1.1, 0.7]);
+    sphere(bossHead, 'white earbud', 0.07, [x * 1.01, 1.54, 0.155], earbudMat, [0.7, 1.25, 0.7]);
+    sphere(bossHead, 'earbud stem', 0.025, [x * 1.01, 1.46, 0.18], earbudMat, [0.8, 1.4, 0.8]);
+  }
+  for (const x of [-0.125, 0.125]) {
+    sphere(bossHead, 'eye', 0.034, [x, 1.54, 0.389], faceInk, [1, 1.08, 0.58]);
+    sphere(bossHead, 'eye highlight', 0.011, [x - 0.008, 1.553, 0.408], bossSole, [1, 1, 0.6]);
+  }
+  box(bossHead, 'left eyebrow', [0.17, 0.035, 0.035], [-0.13, 1.655, 0.37], faceInk, { rotation: [0, 0, 0.08] });
+  box(bossHead, 'right eyebrow', [0.17, 0.035, 0.035], [0.13, 1.655, 0.37], faceInk, { rotation: [0, 0, -0.08] });
+  sphere(bossHead, 'nose', 0.043, [0, 1.465, 0.416], bossSkin, [0.82, 0.9, 0.8]);
+  const smileCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-0.13, 1.385, 0.374), new THREE.Vector3(-0.07, 1.355, 0.395),
+    new THREE.Vector3(0, 1.35, 0.4), new THREE.Vector3(0.07, 1.355, 0.395),
+    new THREE.Vector3(0.13, 1.385, 0.374)
+  ]);
+  const smile = new THREE.Mesh(new THREE.TubeGeometry(smileCurve, 14, 0.012, 5, false), faceInk);
+  smile.name = 'friendly smile';
+  bossHead.add(smile);
+  const cableLeft = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-0.36, 1.46, 0.19), new THREE.Vector3(-0.39, 1.22, 0.19),
+    new THREE.Vector3(-0.31, 1.02, 0.26), new THREE.Vector3(-0.15, 0.91, 0.3),
+    new THREE.Vector3(0.03, 0.79, 0.31), new THREE.Vector3(0.04, 0.63, 0.27)
+  ]);
+  const cableRight = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0.36, 1.46, 0.19), new THREE.Vector3(0.4, 1.22, 0.19),
+    new THREE.Vector3(0.34, 1.0, 0.26), new THREE.Vector3(0.19, 0.9, 0.3),
+    new THREE.Vector3(0.03, 0.79, 0.31), new THREE.Vector3(0.04, 0.63, 0.27)
+  ]);
+  for (const [name, curve] of [['left earbud cable', cableLeft], ['right earbud cable', cableRight]]) {
+    const cable = new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.012, 5, false), cableMat);
+    cable.name = name;
+    cable.castShadow = false;
+    bossRoot.add(cable);
+  }
+  cylinder(bossRoot, 'boss title halo', 0.22, 0.22, 0.045, [0, 2.15, 0], goldMat, 16);
+  for (let spike = 0; spike < 3; spike++) {
+    const tip = cylinder(bossRoot, 'boss crown detail', 0.025, 0.07, 0.12, [(spike - 1) * 0.12, 2.23, 0], goldMat, 6);
+    tip.rotation.z = (spike - 1) * -0.18;
+  }
+
   // Desk-side bookcase and colorful books.
   const shelf = group(scene, 'bookcase', [-8.6, 0, -1.6]);
   box(shelf, 'bookcase body', [0.72, 2.25, 2.2], [0, 1.2, 0], mats.wood);
@@ -286,14 +423,14 @@ export function createOffice(host, { onSelect } = {}) {
   });
 
   // A tiny mailbox and outdoor stepping stones add a playful dollhouse edge.
-  box(scene, 'welcome sign post', [0.12, 1.45, 0.12], [-8.1, 0.68, 6.35], mats.wood);
-  box(scene, 'welcome sign', [1.45, 0.62, 0.14], [-8.1, 1.42, 6.32], mats.cream);
-  for (let i = 0; i < 5; i++) {
-    const stone = cylinder(scene, 'stepping stone', 0.36, 0.38, 0.1, [-5 + i * 2.5, -0.05, 6.2], material(i % 2 ? '#d6c9b3' : '#c7bba8'), 8);
+  box(scene, 'welcome sign post', [0.12, 1.45, 0.12], [-11.35, 0.68, 8.3], mats.wood);
+  box(scene, 'welcome sign', [1.8, 0.62, 0.14], [-11.35, 1.42, 8.27], mats.cream);
+  for (let i = 0; i < 7; i++) {
+    const stone = cylinder(scene, 'stepping stone', 0.36, 0.38, 0.1, [-7.5 + i * 2.5, -0.05, 8.0], material(i % 2 ? '#d6c9b3' : '#c7bba8'), 8);
     stone.rotation.y = i * 0.3;
   }
 
-  const originalCamera = new THREE.Vector3(17, 17, 21);
+  const originalCamera = new THREE.Vector3(23, 20, 25);
   const resize = () => {
     const width = Math.max(host.clientWidth, 320);
     const height = Math.max(host.clientHeight, 320);
@@ -322,11 +459,13 @@ export function createOffice(host, { onSelect } = {}) {
   };
 
   const roomViews = {
-    all: { position: [17, 17, 21], target: [0, 1.05, 0] },
-    studio: { position: [8, 9, 13], target: [-4.8, 1, -1.7] },
-    lounge: { position: [13, 10, 10], target: [5.7, 1, -0.1] },
+    all: { position: [23, 20, 25], target: [0, 1.05, 0] },
+    boss: { position: [10.5, 8.5, 13], target: [-1.65, 1.05, 3.3] },
+    studio: { position: [12, 10, 16], target: [0.2, 1, -3.0] },
+    meeting: { position: [10.5, 8.5, 12], target: [10.1, 1, 0.1] },
+    lounge: { position: [14, 10, 10], target: [5.7, 1, -0.1] },
     games: { position: [13, 9, 12], target: [6.2, 0.8, 2.8] },
-    pantry: { position: [7, 9, 13], target: [-6.4, 1, 1.9] }
+    pantry: { position: [9, 9, 14], target: [-6.4, 1, 1.9] }
   };
   const focusRoom = (room) => {
     const view = roomViews[room] || roomViews.all;
@@ -351,7 +490,7 @@ export function createOffice(host, { onSelect } = {}) {
     pointer.x = ((event.clientX - bounds.left) / bounds.width) * 2 - 1;
     pointer.y = -((event.clientY - bounds.top) / bounds.height) * 2 + 1;
     raycaster.setFromCamera(pointer, camera);
-    const hits = raycaster.intersectObjects(characterGroups, true);
+    const hits = raycaster.intersectObjects([...characterGroups, bossRoot], true);
     if (!hits.length) return;
     let parent = hits[0].object;
     while (parent && !parent.userData.character) parent = parent.parent;
@@ -370,6 +509,11 @@ export function createOffice(host, { onSelect } = {}) {
     animationFrame = requestAnimationFrame(animate);
     const delta = Math.min(clock.getDelta(), 0.04);
     const elapsed = clock.elapsedTime;
+    if (!reducedMotion) {
+      bossRoot.position.y = Math.sin(elapsed * 1.25) * 0.018;
+      bossHead.rotation.y = Math.sin(elapsed * 0.55) * 0.045;
+      bossHead.rotation.z = Math.sin(elapsed * 0.8) * 0.012;
+    }
     characterGroups.forEach((character, i) => {
       const motion = character.userData.motion;
       if (character.userData.statusOrb && character.userData.statusRing) {
