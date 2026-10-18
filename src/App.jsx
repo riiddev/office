@@ -4,8 +4,10 @@ import { createOffice } from './scene/createOffice.js';
 import { agents } from './data/characters.js';
 
 const rooms = [
-  { id: 'all', label: 'Whole office', icon: '⌂' },
+  { id: 'all', label: 'Whole HQ', icon: '⌂' },
+  { id: 'boss', label: 'Boss office', icon: '♛' },
   { id: 'studio', label: 'Studio', icon: '✳' },
+  { id: 'meeting', label: 'War room', icon: '◫' },
   { id: 'lounge', label: 'Lounge', icon: '▱' },
   { id: 'games', label: 'Game room', icon: '✦' },
   { id: 'pantry', label: 'Pantry', icon: '☕' },
@@ -22,6 +24,8 @@ const activity = [
   { time: '5 min ago', agentId: 'guard', title: 'Dependency check paused', detail: 'Waiting for another task', tone: 'blocked' },
   { time: '12 min ago', agentId: 'pixel', title: 'Returned to the lounge', detail: 'No task assigned in this preview', tone: 'idle' },
 ];
+const crew = agents.filter((agent) => agent.id !== 'boss');
+const boss = agents.find((agent) => agent.id === 'boss');
 const statusLabels = { working: 'Working', review: 'Needs review', idle: 'Idle', blocked: 'Blocked', queued: 'Queued' };
 const statusGlyphs = { working: '↗', review: '◷', idle: '☕', blocked: 'Ⅱ', queued: '○' };
 
@@ -29,7 +33,7 @@ function StatusBadge({ status }) {
   return <span className={`status-badge status-${status}`}><i />{statusLabels[status] || status}</span>;
 }
 function AgentAvatar({ agent, compact = false }) {
-  return <span className={compact ? 'agent-avatar compact' : 'agent-avatar'} style={{ '--avatar': agent.shirt, '--skin': agent.color, '--hair': agent.hair }}>
+  return <span className={`agent-avatar ${agent.id === 'boss' ? 'boss-avatar' : ''} ${compact ? 'compact' : ''}`} style={{ '--avatar': agent.shirt, '--skin': agent.color, '--hair': agent.hair }}>
     <span className="avatar-hair" /><span className="avatar-face"><i /><i /></span><span className="avatar-body" />
   </span>;
 }
@@ -40,7 +44,7 @@ function App() {
   const mainRef = useRef(null);
   const [night, setNight] = useState(false);
   const [activeRoom, setActiveRoom] = useState('all');
-  const [selectedAgentId, setSelectedAgentId] = useState('forge');
+  const [selectedAgentId, setSelectedAgentId] = useState('boss');
   const [showConnect, setShowConnect] = useState(false);
   const [accessToken, setAccessToken] = useState('');
   const [taskPrompt, setTaskPrompt] = useState('');
@@ -50,8 +54,8 @@ function App() {
   const [clock, setClock] = useState(() => new Date());
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) || agents[0];
   const counts = useMemo(() => ({
-    working: agents.filter((agent) => agent.status === 'working').length,
-    review: agents.filter((agent) => agent.status === 'review').length,
+    working: crew.filter((agent) => agent.status === 'working').length,
+    review: crew.filter((agent) => agent.status === 'review').length,
     connected: 0,
   }), []);
 
@@ -109,7 +113,7 @@ function App() {
         <span className="brand-mark hq-brand-mark">HQ<span>↗</span></span>
         <span className="brand-copy"><strong>riiddev <span className="brand-slash">/</span> agent hq</strong><small>Your tiny AI headquarters</small></span>
       </a>
-      <div className="hq-topbar-center"><span className="demo-dot" /> PREVIEW ENVIRONMENT <span className="topbar-divider">/</span> NO LIVE AGENTS CONNECTED</div>
+      <div className="hq-topbar-center"><span className="demo-dot" /> BOSS MODE <span className="topbar-divider">/</span> INTERACTIVE HQ</div>
       <div className="topbar-actions">
         <div className="clock"><strong>{time}</strong><span>{date}</span></div>
         <button className="theme-toggle" onClick={() => setNight((value) => !value)} aria-label={night ? 'Switch to daytime' : 'Switch to nighttime'} title="Toggle day / night"><span>{night ? '☼' : '☾'}</span><small>{night ? 'Day' : 'Night'}</small></button>
@@ -119,15 +123,15 @@ function App() {
 
     <section className="hq-intro animate-in">
       <div className="hq-intro-copy">
-        <p className="eyebrow"><span>✦</span> THE CREW AT A GLANCE</p>
-        <h1>Your AI crew,<br /><em>in their element.</em></h1>
-        <p className="intro-copy">A cozy 3D command center for the agents you run.<br className="desktop-break" /> Explore the office, follow tasks, and see who's up next.</p>
+        <p className="eyebrow"><span>✦</span> FOUNDER'S FLOOR · BOSS MODE</p>
+        <h1>Welcome to your HQ,<br /><em>Boss.</em></h1>
+        <p className="intro-copy">Your own living 3D headquarters. Walk the floor, check in on your crew,<br className="desktop-break" /> and send the next big idea into motion.</p>
       </div>
-      <div className="preview-notice"><span className="preview-notice-icon">⌁</span><span><strong>Demo data is on</strong><small>These agents and events are examples, not live activity.</small></span><span className="notice-arrow">↗</span></div>
+      <div className="preview-notice"><span className="preview-notice-icon">⌁</span><span><strong>Your office, your rules</strong><small>9 AI coworkers · illustrative activity is marked as demo.</small></span><span className="notice-arrow">↗</span></div>
     </section>
 
     <section className="hq-stats animate-in" aria-label="Agent overview">
-      <article className="hq-stat-card"><div className="stat-top"><span className="stat-icon icon-lilac">⌘</span><span className="stat-micro">DEMO</span></div><strong className="stat-number">{agents.length.toString().padStart(2, '0')}</strong><span className="stat-label">Crew members</span><span className="stat-sub">Sample agent profiles</span></article>
+      <article className="hq-stat-card"><div className="stat-top"><span className="stat-icon icon-lilac">⌘</span><span className="stat-micro">DEMO</span></div><strong className="stat-number">{crew.length.toString().padStart(2, '0')}</strong><span className="stat-label">AI coworkers</span><span className="stat-sub">Plus you, the boss</span></article>
       <article className="hq-stat-card"><div className="stat-top"><span className="stat-icon icon-green">↗</span><span className="stat-micro">DEMO</span></div><strong className="stat-number">{counts.working.toString().padStart(2, '0')}</strong><span className="stat-label">Working now</span><span className="stat-sub">Simulated task state</span></article>
       <article className="hq-stat-card"><div className="stat-top"><span className="stat-icon icon-amber">◷</span><span className="stat-micro">DEMO</span></div><strong className="stat-number">{counts.review.toString().padStart(2, '0')}</strong><span className="stat-label">Needs review</span><span className="stat-sub">Example review queue</span></article>
       <article className="hq-stat-card"><div className="stat-top"><span className="stat-icon icon-blue">⟡</span><span className="stat-micro">LIVE</span></div><strong className="stat-number">{counts.connected.toString().padStart(2, '0')}</strong><span className="stat-label">Connected agents</span><span className="stat-sub">Real connections</span></article>
@@ -135,7 +139,7 @@ function App() {
 
     <section className="hq-main-grid animate-in">
       <article className="world-card hq-world-card">
-        <div className="hq-world-head"><div className="world-label"><span className="world-pulse" /><span><strong>THE VIRTUAL OFFICE</strong><small>INTERACTIVE WORLD / 01</small></span></div><div className="hq-world-state"><span className="demo-dot" /> SIMULATED CREW</div></div>
+        <div className="hq-world-head"><div className="world-label"><span className="world-pulse" /><span><strong>THE VIRTUAL OFFICE</strong><small>INTERACTIVE WORLD / 01</small></span></div><div className="hq-world-state"><span className="demo-dot" /> COZY HQ · DEMO ACTIVITY</div></div>
         <div className="world-toolbar hq-world-toolbar">
           <div className="room-switcher" aria-label="Choose room">{rooms.map((room) => <button key={room.id} className={activeRoom === room.id ? 'room-button active' : 'room-button'} onClick={() => chooseRoom(room.id)}><span>{room.icon}</span>{room.label}</button>)}</div>
           <button className="reset-button" onClick={() => { setActiveRoom('all'); office.current?.resetView(); }} title="Reset camera"><span className="icon">↺</span><span>Reset view</span></button>
@@ -150,8 +154,13 @@ function App() {
       </article>
 
       <aside className="hq-crew-panel">
-        <div className="hq-section-head"><div><p className="eyebrow">YOUR AGENTS</p><h2>Meet the crew</h2></div><span className="count-pill">{agents.length} profiles</span></div>
-        <div className="hq-agent-list">{agents.map((agent) => <button key={agent.id} className={`hq-agent-row ${selectedAgent.id === agent.id ? 'selected' : ''}`} onClick={() => chooseAgent(agent)}>
+        <div className="hq-section-head"><div><p className="eyebrow">YOUR PEOPLE</p><h2>Meet the crew</h2></div><span className="count-pill">{crew.length} AI crew</span></div>
+        {boss && <button className={`hq-boss-callout ${selectedAgent.id === boss.id ? 'selected' : ''}`} onClick={() => chooseAgent(boss)}>
+          <AgentAvatar agent={boss} />
+          <span className="hq-boss-copy"><small>YOUR ROLE</small><strong>Riiddev · Founder &amp; Boss</strong><span>Executive desk · click to focus</span></span>
+          <span className="hq-boss-arrow">↗</span>
+        </button>}
+        <div className="hq-agent-list">{crew.map((agent) => <button key={agent.id} className={`hq-agent-row ${selectedAgent.id === agent.id ? 'selected' : ''}`} onClick={() => chooseAgent(agent)}>
           <AgentAvatar agent={agent} />
           <span className="hq-agent-main"><strong>{agent.name}</strong><small>{agent.role}</small><span className="hq-agent-task">{agent.task}</span></span>
           <span className="hq-agent-side"><StatusBadge status={agent.status} /><small>{agent.provider}</small></span>
@@ -212,7 +221,7 @@ function App() {
           {dispatchState === 'success' && dispatchResult && <div className="dispatch-result" role="status"><strong>Task sudah dikirim ke GitHub.</strong><span>{dispatchResult.message}</span><div><a href={dispatchResult.issueUrl} target="_blank" rel="noreferrer">Open task issue ↗</a><a href={dispatchResult.workflowUrl} target="_blank" rel="noreferrer">Open Actions ↗</a></div></div>}
         </form>
         <div className="security-note"><span>♧</span><p><strong>Keep secrets out of task text</strong><br />The HQ token is sent to the protected Vercel endpoint. The GitHub token stays server-side; do not include passwords or API keys in a task because the issue text may be visible in GitHub.</p></div>
-        <p className="connect-disclaimer">Setup required: add HQ_ACCESS_TOKEN and GITHUB_ISSUES_TOKEN to Vercel, install the OpenCode GitHub App, and add OPENAI_API_KEY to GitHub Actions secrets. The task sender will show a setup error until these are configured.</p>
+        <p className="connect-disclaimer">Setup: HQ_ACCESS_TOKEN and GITHUB_ISSUES_TOKEN belong in Vercel; the OpenCode GitHub App and GEMINI_API_KEY belong in GitHub. Gemini free-tier limits apply, and this preview still labels sample crew activity honestly.</p>
       </section>
     </div>}
   </main>;
