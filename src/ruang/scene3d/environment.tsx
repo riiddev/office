@@ -206,18 +206,18 @@ function BuildingShell({ night, layout }: { night: boolean; layout: OfficeLayout
 }
 
 /** Dedicated upstairs prayer room with parallel mats, a shared qibla wall and a clear doorway. */
-function Musholla() {
+function Musholla({ capacity }: { capacity: number }) {
   const left = MUSHOLLA.x - 2.45
   const right = MUSHOLLA.x + 2.45
   const back = MUSHOLLA.z - 2.35
   const front = MUSHOLLA.z + 2.35
   const doorwayHalf = 1.2
-  const mats = Array.from({ length: MUSHOLLA.capacity - 1 }, (_, index) => {
+  const followerCount = Math.max(0, Math.min(MUSHOLLA.capacity, Math.floor(capacity)) - 1)
+  const mats = Array.from({ length: followerCount }, (_, index) => {
     const row = Math.floor(index / MUSHOLLA.columns)
     const column = index % MUSHOLLA.columns
-    const maxFollowers = MUSHOLLA.capacity - 1
-    const columnsInRow = row === MUSHOLLA.rows - 1 ? maxFollowers % MUSHOLLA.columns || MUSHOLLA.columns : MUSHOLLA.columns
-    const centeredColumn = column - (columnsInRow - 1) / 2
+    const followersInRow = Math.min(MUSHOLLA.columns, followerCount - row * MUSHOLLA.columns)
+    const centeredColumn = column - (followersInRow - 1) / 2
     return {
       index, row,
       x: MUSHOLLA.x + centeredColumn * MUSHOLLA.columnSpacing,
@@ -311,7 +311,7 @@ function UpperFloor({ night, layout }: { night: boolean; layout: OfficeLayout })
       <Wardrobe position={[minX + 0.4, 0, 2.8]} rotation={Math.PI / 2}/>
       <AirConditioner position={[(minX + PARTITION_X) / 2, 2.3, minZ + 0.125]}/>
       {/* Lesehan corner */}
-      <Musholla/>
+      <Musholla capacity={layout.deskCount}/>
       <DiningRoom/>
       <Bookshelf position={[6.5, 0, minZ + 0.3]}/>
       <Plant position={[1.1, 0, minZ + 0.5]} size={0.9}/>

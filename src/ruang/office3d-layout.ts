@@ -76,8 +76,8 @@ export const BALCONY_TABLE: Vec3 = [0.6, FLOOR_HEIGHT, 5.5]
 export const HAMMOCK: Vec3 = [4.2, FLOOR_HEIGHT, 5.95]
 /** Lesehan corner upstairs: a low table on a carpet with floor cushions around it. */
 export const LESEHAN_TABLE: Vec3 = [4.3, FLOOR_HEIGHT, -3]
-/** Dedicated upstairs prayer room; all prayer mats share one qibla-facing direction. */
-export const MUSHOLLA = { x: 4.3, z: -3.0, facing: Math.PI, columns: 3, rows: 4, columnSpacing: 0.9, rowSpacing: 0.9, capacity: 12 }
+/** Dedicated upstairs prayer room; supports twenty congregants plus one imam in straight rows. */
+export const MUSHOLLA = { x: 4.3, z: -3.0, facing: Math.PI, columns: 5, rows: 4, columnSpacing: 0.85, rowSpacing: 0.9, capacity: 21 }
 /** Two dining tables, six places per table (12 seats total), on the open part of lantai 2. */
 export const DINING = { tableCenters: [3.55, 6.05] as const, z: 1.6, length: 2.05, width: 1.05, seatOffsets: [-0.65, 0, 0.65] as const }
 /** Bathroom on lantai 2: entry is the opening in its front wall. */
@@ -125,15 +125,16 @@ export interface OfficeLayout {
 const spot = (x: number, z: number, facing: number, seated = false, label?: string): Placement => ({ position: [x, 0, z], facing, seated, ...(label ? { label } : {}) })
 const upstairs = (x: number, z: number, facing: number, extra: Partial<Placement> = {}): Placement => ({ position: [x, FLOOR_HEIGHT, z], facing, seated: false, ...extra })
 
-/** Capacity includes the imam: one front mat plus up to eleven followers in straight rows. */
-export function mushollaSpot(index: number): Placement {
+/** Capacity includes the imam. Every partially filled active row is centered around the qibla axis. */
+export function mushollaSpot(index: number, groupSize = MUSHOLLA.capacity): Placement {
   if (index === 0) return upstairs(MUSHOLLA.x, MUSHOLLA.z - 1.72, MUSHOLLA.facing, { label: 'Imam · front' })
+  const activeCapacity = Math.max(1, Math.min(MUSHOLLA.capacity, Math.floor(groupSize)))
+  const followerCount = activeCapacity - 1
   const follower = index - 1
-  const maxFollowers = MUSHOLLA.capacity - 1
   const row = Math.floor(follower / MUSHOLLA.columns)
   const column = follower % MUSHOLLA.columns
-  const columnsInRow = row === MUSHOLLA.rows - 1 ? maxFollowers % MUSHOLLA.columns || MUSHOLLA.columns : MUSHOLLA.columns
-  const centeredColumn = column - (columnsInRow - 1) / 2
+  const followersInRow = Math.min(MUSHOLLA.columns, Math.max(1, followerCount - row * MUSHOLLA.columns))
+  const centeredColumn = column - (followersInRow - 1) / 2
   const x = MUSHOLLA.x + centeredColumn * MUSHOLLA.columnSpacing
   const z = MUSHOLLA.z - 1.0 + row * MUSHOLLA.rowSpacing
   return upstairs(x, z, MUSHOLLA.facing, { label: `Saf ${row + 1}` })

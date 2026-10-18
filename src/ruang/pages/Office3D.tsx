@@ -620,16 +620,22 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
   })
   const choice = (stops: DailyStop[], offset = 0) => stops[(seat - 1 + offset) % stops.length]
   /** Assign seats in capacity-sized blocks so a shared room never receives more agents than spots. */
-  const capacityChoice = (options: { stop: DailyStop; capacity: number }[]): DailyStop => {
-    let remaining = seat - 1
+  const capacityChoice = (options: { stop: DailyStop; capacity: number }[], memberSeat = seat): DailyStop => {
+    let remaining = Math.max(0, Math.floor(memberSeat) - 1)
     for (const option of options) {
       if (remaining < option.capacity) return option.stop
       remaining -= option.capacity
     }
-    // The current office's ordinary crew fits before this fallback. Keep overflow in the largest
-    // shared space until a dedicated queue is selected by the schedule.
     return options[options.length - 1]?.stop ?? 'dining'
   }
+  // Dining has twelve reserved chairs. Extra agents use finite snack/relaxation spots instead
+  // of wrapping back onto an occupied dining seat.
+  const mealStop = () => seat <= 12 ? 'dining' : capacityChoice([
+    { stop: 'bakso', capacity: 3 },
+    { stop: 'kopi', capacity: 3 },
+    { stop: 'lounge', capacity: 3 },
+    { stop: 'balkon', capacity: 4 },
+  ], seat - 12)
   const work = (wrapUp = false): RoutineAction => {
     const reviewing = wrapUp ? seat % 2 === 0 : seat % 4 === 0
     return action('desk', reviewing ? 'Reviewing' : 'Working', wrapUp ? (reviewing ? 'Reviewing final tasks' : 'Finishing work') : (reviewing ? 'Reviewing code and notes' : 'Working at the computer'), reviewing ? 'Reviewing' : 'Working')
@@ -652,9 +658,12 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
     if (turn >= count) return action('bedroom', 'Idle', 'Getting dressed for work', 'Getting ready')
     return action('bathroom-queue', 'Idle', `Waiting in bathroom queue · ${seat - turn - 1}`, 'In queue', seat - turn - 2)
   }
-  if (minute < 7 * 60) return minute >= 6 * 60 + 50
-    ? action('dining', 'Idle', 'Clearing breakfast dishes · wiping the table', 'Tidying dining area')
-    : action('dining', 'Idle', 'Breakfast · eating and chatting', 'Breakfast')
+  if (minute < 7 * 60) {
+    const stop = mealStop()
+    if (minute >= 6 * 60 + 50 && stop === 'dining') return action(stop, 'Idle',
+      'Clearing breakfast dishes · wiping the table', 'Tidying dining area')
+    return action(stop, 'Idle', 'Breakfast · eating and chatting', 'Breakfast')
+  }
   if (minute < 8 * 60) {
     return minute < 7 * 60 + 20
       ? action('bedroom', 'Idle', 'Making the bed · getting dressed', 'Morning prep')
@@ -663,9 +672,12 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
   if (minute >= PRAYER_TIMES.dhuhr.start - 15 && minute < PRAYER_TIMES.dhuhr.start) return headingToPrayer()
   if (minute < PRAYER_TIMES.dhuhr.start) return work()
   if (minute < PRAYER_TIMES.dhuhr.end) return prayer('Dhuhr prayer')
-  if (minute < 14 * 60) return minute >= 13 * 60 + 50
-    ? action('dining', 'Idle', 'Clearing lunch dishes · wiping the table', 'Tidying dining area')
-    : action('dining', 'Idle', 'Lunch · eating with colleagues', 'Lunch break')
+  if (minute < 14 * 60) {
+    const stop = mealStop()
+    if (minute >= 13 * 60 + 50 && stop === 'dining') return action(stop, 'Idle',
+      'Clearing lunch dishes · wiping the table', 'Tidying dining area')
+    return action(stop, 'Idle', 'Lunch · eating with colleagues', 'Lunch break')
+  }
   if (minute < 15 * 60 + 30) {
     const block = Math.floor((minute - 14 * 60) / 30)
     const joinsMeeting = (seat + block) % 3 === 0
@@ -674,8 +686,21 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
       : work()
   }
   if (minute < PRAYER_TIMES.asr.start - 15) {
-    const stop = choice(['kopi', 'galon', 'bakso', 'lounge'], Math.floor((minute - (15 * 60 + 30)) / 10))
-    const activity = stop === 'kopi' ? 'Coffee break' : stop === 'galon' ? 'Getting a drink of water' : 'Snack break · socializing'
+    const options = [
+      { stop: 'kopi' as const, capacity: 3 },
+      { stop: 'galon' as const, capacity: 3 },
+      { stop: 'bakso' as const, capacity: 3 },
+      { stop: 'lounge' as const, capacity: 3 },
+      { stop: 'balkon' as const, capacity: 4 },
+      { stop: 'dining' as const, capacity: 12 },
+    ]
+    const offset = Math.floor((minute - (15 * 60 + 30)) / 10) % options.length
+    const stop = capacityChoice([...options.slice(offset), ...options.slice(0, offset)])
+    const activity = stop === 'kopi' ? 'Coffee break'
+      : stop === 'galon' ? 'Getting a drink of water'
+      : stop === 'dining' ? 'Snack break · socializing at the table'
+      : stop === 'balkon' ? 'Snack break · socializing on the balcony'
+      : 'Snack break · socializing'
     return action(stop, 'Idle', activity, 'Break')
   }
   if (minute < PRAYER_TIMES.asr.start) return headingToPrayer()
@@ -693,20 +718,32 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
   }
   if (minute < PRAYER_TIMES.maghrib.start) return headingToPrayer()
   if (minute < PRAYER_TIMES.maghrib.end) return prayer('Maghrib prayer')
-  if (minute < PRAYER_TIMES.isha.start - 15) return minute >= PRAYER_TIMES.isha.start - 15
-    ? action('dining', 'Idle', 'Clearing dinner dishes · tidying the table', 'Tidying dining area')
-    : action('dining', 'Idle', 'Dinner · eating and talking', 'Dinner')
+  if (minute < PRAYER_TIMES.isha.start - 15) {
+    const stop = mealStop()
+    if (minute >= PRAYER_TIMES.isha.start - 20 && stop === 'dining') {
+      return action(stop, 'Idle', 'Clearing dinner dishes · tidying the table', 'Tidying dining area')
+    }
+    return action(stop, 'Idle',
+      stop === 'dining' ? 'Dinner · eating and talking' : 'Dinner · finishing up and chatting', 'Dinner')
+  }
   if (minute < PRAYER_TIMES.isha.start) return headingToPrayer()
   if (minute < PRAYER_TIMES.isha.end) return prayer('Isha prayer')
   if (minute < 21 * 60 + 30) {
     const offset = Math.floor((minute - PRAYER_TIMES.isha.end) / 20)
-    const stop = choice(['lounge', 'game', 'arcade', 'balkon', 'dining'], offset)
+    const options = [
+      { stop: 'lounge' as const, capacity: 3 },
+      { stop: 'game' as const, capacity: 3 },
+      { stop: 'arcade' as const, capacity: 3 },
+      { stop: 'balkon' as const, capacity: 4 },
+      { stop: 'dining' as const, capacity: 12 },
+    ]
+    const rotation = offset % options.length
+    const stop = capacityChoice([...options.slice(rotation), ...options.slice(0, rotation)])
     const activity = offset % 5 === 4 ? 'Checking phone and messaging colleagues'
       : stop === 'lounge' ? 'Watching TV and chatting'
       : stop === 'game' || stop === 'arcade' ? 'Playing games together'
       : stop === 'balkon' ? 'Reading and relaxing on the balcony'
       : 'Relaxing around the dining tables'
-    // Phone use changes the gesture, not the destination; keep the same capacity-balanced room assignment.
     return action(stop, 'Idle', activity, 'Leisure')
   }
   if (minute < 22 * 60) {
@@ -817,7 +854,10 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
     const seat = Math.max(station.seat, 1)
     if (station.routineStop === 'desk') return placementFor(station, layout)
     if (station.routineStop === 'meeting') return placementFor(station, layout, Math.max(0, meetingOrder.indexOf(station.id)))
-    if (station.routineStop === 'musholla') return mushollaSpot(Math.max(0, reservationIndex('musholla', station)))
+    if (station.routineStop === 'musholla') return mushollaSpot(
+      Math.max(0, reservationIndex('musholla', station)),
+      stations.filter((candidate) => candidate.routineStop === 'musholla').length,
+    )
     if (station.routineStop === 'dining') return diningSpot(Math.max(0, reservationIndex('dining', station)))
     if (station.routineStop === 'bathroom-queue') return bathroomQueueSpot(Math.max(0, station.queueRank ?? reservationIndex('bathroom-queue', station)))
     if (station.routineStop === 'bathroom') {
