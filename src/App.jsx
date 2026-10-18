@@ -13,7 +13,8 @@ const rooms = [
   { id: 'street', label: 'Street food', icon: '♨' },
   { id: 'bedroom', label: 'Bedroom', icon: '☾' },
   { id: 'bathroom', label: 'Bathroom', icon: '⌁' },
-  { id: 'lesehan', label: 'Lesehan', icon: '⌑' },
+  { id: 'musholla', label: 'Musholla', icon: '☪' },
+  { id: 'dining', label: 'Dining room', icon: '♨' },
   { id: 'balcony', label: 'Balcony', icon: '⌂' },
 ];
 
@@ -221,7 +222,7 @@ function App() {
           </div>
 
           <nav className="v-room-dock" aria-label="Explore office rooms">
-            <div className="v-room-dock-heading"><span>EXPLORE</span><small>11 SPACES</small></div>
+            <div className="v-room-dock-heading"><span>EXPLORE</span><small>12 SPACES</small></div>
             {rooms.map((room) => (
               <button
                 key={room.id}
