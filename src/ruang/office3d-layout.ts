@@ -316,10 +316,30 @@ function upperRoute(from: [number, number], to: [number, number], layout: Office
   const onBalcony = ([, z]: [number, number]) => z > BALCONY.minZ
   const doorX = (BALCONY_DOOR.fromX + BALCONY_DOOR.toX) / 2
   const inBedroom = ([x, z]: [number, number]) => x < PARTITION_X && z < -0.3
+  const inMusholla = ([x, z]: [number, number]) =>
+    x > MUSHOLLA.x - 2.45 && x < MUSHOLLA.x + 2.45 &&
+    z > MUSHOLLA.z - 2.35 && z < MUSHOLLA.z + 2.35
+  const inDiningRoom = ([x, z]: [number, number]) =>
+    x > DINING.tableCenters[0] - 1.1 && x < DINING.tableCenters[1] + 1.1 &&
+    z > DINING.z - 1.25 && z < DINING.z + 1.25
   // Beds share columns, so the back row is reached through the gap beside its column.
   const gapX = (x: number) => Math.min(x + DESK_PITCH / 2, PARTITION_X - 0.3)
-  const toAisle = (point: [number, number]): [number, number][] => onBalcony(point) ? [[point[0], BALCONY_LANE_Z], [doorX, BALCONY_LANE_Z], [doorX, AISLE_Z]]
-    : inBedroom(point) ? [[gapX(point[0]), point[1]], [gapX(point[0]), AISLE_Z]] : [[point[0], AISLE_Z]]
+  const toAisle = (point: [number, number]): [number, number][] => {
+    if (onBalcony(point)) return [[point[0], BALCONY_LANE_Z], [doorX, BALCONY_LANE_Z], [doorX, AISLE_Z]]
+    if (inBedroom(point)) return [[gapX(point[0]), point[1]], [gapX(point[0]), AISLE_Z]]
+    if (inMusholla(point)) {
+      // Leave/enter through the only doorway, then use the aisle; do not route through the qibla wall.
+      const doorStepZ = MUSHOLLA.z + 2.85
+      return [[point[0], doorStepZ], [point[0], AISLE_Z]]
+    }
+    if (inDiningRoom(point) && point[1] > DINING.z + 0.2) {
+      // Walk away from the chair row before crossing to the side lane, clearing the tabletop.
+      const clearZ = DINING.z + 1.55
+      const sideLaneX = DINING.tableCenters[1] + DINING.length / 2 + 0.55
+      return [[point[0], clearZ], [sideLaneX, clearZ], [sideLaneX, AISLE_Z]]
+    }
+    return [[point[0], AISLE_Z]]
+  }
   void layout
   return [from, ...toAisle(from), ...toAisle(to).reverse(), to]
 }
