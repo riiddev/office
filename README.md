@@ -14,7 +14,7 @@ A cozy Sims-inspired 3D command center for AI-assisted work, built with React, V
 ## Enable cloud task execution
 
 1. **Install the OpenCode GitHub App** on the `riiddev/office` repository: https://github.com/apps/opencode-agent
-2. In `riiddev/office` → **Settings → Secrets and variables → Actions → New repository secret**, add `OPENAI_API_KEY`. The workflow currently uses `openai/gpt-4.1`; API usage is billed separately from a ChatGPT subscription.
+2. In `riiddev/office` → **Settings → Secrets and variables → Actions → New repository secret**, add `OPENAI_API_KEY`. The workflow currently uses `openai/gpt-6.1-sol`; API usage is billed separately from a ChatGPT subscription.
 3. Create a **fine-grained GitHub personal access token** restricted to this repository, with **Issues: Read and write**. The token is used only by the Vercel endpoint to create task issues/comments; the OpenCode app handles the agent workflow.
 4. In Vercel → `kantorriddev` → **Settings → Environment Variables**, add:
    - `GITHUB_ISSUES_TOKEN` = the fine-grained token from step 3.
