@@ -112,7 +112,7 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
         const turn = Math.abs(angleTo(group.rotation.y, heading))
         // Ease in from rest, ease out towards the final spot, and slow for sharp turns instead of sliding sideways.
         const approach = finalLeg ? 0.35 + distance * 1.6 : 1
-        const target = WALK_SPEED * Math.max(1, simulationRate / 60) * Math.min(1, approach) * (1 - Math.min(0.7, turn / 2.2))
+        const target = WALK_SPEED * Math.max(1, simulationRate / 50) * Math.min(1, approach) * (1 - Math.min(0.7, turn / 2.2))
         s.speed = damp(s.speed, target, target > s.speed ? 4 : 7, delta)
         const step = Math.min(distance, s.speed * delta)
         scratch.move.normalize().multiplyScalar(step)
@@ -635,6 +635,7 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
     return action('desk', reviewing ? 'Reviewing' : 'Working', wrapUp ? (reviewing ? 'Reviewing final tasks' : 'Finishing work') : (reviewing ? 'Reviewing code and notes' : 'Working at the computer'), reviewing ? 'Reviewing' : 'Working')
   }
   const prayer = (name: string) => action('musholla', 'Idle', name, 'Praying')
+  // Give the furthest desk-to-stair-to-musholla route a 15-minute simulated head start.
   const headingToPrayer = () => action('musholla', 'Idle', 'Heading to the musholla', 'Heading to prayer')
 
   // Sleep is a fixed window, including after midnight, so agents never wake between schedule slots.
@@ -659,7 +660,7 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
       ? action('bedroom', 'Idle', 'Making the bed · getting dressed', 'Morning prep')
       : action('desk', 'Idle', 'Walking to the workplace', 'Heading to work')
   }
-  if (minute >= PRAYER_TIMES.dhuhr.start - 10 && minute < PRAYER_TIMES.dhuhr.start) return headingToPrayer()
+  if (minute >= PRAYER_TIMES.dhuhr.start - 15 && minute < PRAYER_TIMES.dhuhr.start) return headingToPrayer()
   if (minute < PRAYER_TIMES.dhuhr.start) return work()
   if (minute < PRAYER_TIMES.dhuhr.end) return prayer('Dhuhr prayer')
   if (minute < 14 * 60) return minute >= 13 * 60 + 50
@@ -672,7 +673,7 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
       ? action('meeting', 'Collaborating', 'Team sync · sharing progress', 'In a meeting')
       : work()
   }
-  if (minute < PRAYER_TIMES.asr.start - 10) {
+  if (minute < PRAYER_TIMES.asr.start - 15) {
     const stop = choice(['kopi', 'galon', 'bakso', 'lounge'], Math.floor((minute - (15 * 60 + 30)) / 10))
     const activity = stop === 'kopi' ? 'Coffee break' : stop === 'galon' ? 'Getting a drink of water' : 'Snack break · socializing'
     return action(stop, 'Idle', activity, 'Break')
@@ -680,7 +681,7 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
   if (minute < PRAYER_TIMES.asr.start) return headingToPrayer()
   if (minute < PRAYER_TIMES.asr.end) return prayer('Asr prayer')
   if (minute < 17 * 60 + 30) return work(true)
-  if (minute < PRAYER_TIMES.maghrib.start - 10) {
+  if (minute < PRAYER_TIMES.maghrib.start - 15) {
     const stop = capacityChoice([
       { stop: 'lounge', capacity: 3 },
       { stop: 'balkon', capacity: 4 },
@@ -692,7 +693,7 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
   }
   if (minute < PRAYER_TIMES.maghrib.start) return headingToPrayer()
   if (minute < PRAYER_TIMES.maghrib.end) return prayer('Maghrib prayer')
-  if (minute < PRAYER_TIMES.isha.start - 10) return minute >= PRAYER_TIMES.isha.start - 15
+  if (minute < PRAYER_TIMES.isha.start - 15) return minute >= PRAYER_TIMES.isha.start - 15
     ? action('dining', 'Idle', 'Clearing dinner dishes · tidying the table', 'Tidying dining area')
     : action('dining', 'Idle', 'Dinner · eating and talking', 'Dinner')
   if (minute < PRAYER_TIMES.isha.start) return headingToPrayer()
