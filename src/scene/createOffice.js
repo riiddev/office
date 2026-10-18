@@ -262,7 +262,7 @@ export function createOffice(host, { onSelect } = {}) {
   box(pantry, 'galon tap', [0.16, 0.08, 0.17], [1.25, 0.79, 0.07], mats.navy);
 
   // Bathroom suite with a real doorway, glass shower, vanity and toilet.
-  const bathroom = group(scene, 'bathroom suite', [-10.5, 0, 3.3]);
+  const bathroom = group(scene, 'bathroom suite', [-10.5, 0, 5.0]);
   box(bathroom, 'bathroom tile floor', [4.0, 0.08, 4.1], [0, 0.04, 0], mats.bathTile);
   box(bathroom, 'bathroom back wall', [4.2, 2.5, 0.16], [0, 1.25, -2.0], mats.wall);
   box(bathroom, 'bathroom left wall', [0.16, 2.5, 4.1], [-2.02, 1.25, 0], mats.wall);
@@ -286,8 +286,8 @@ export function createOffice(host, { onSelect } = {}) {
   box(bathroom, 'bathroom mirror frame', [0.92, 1.08, 0.1], [0.85, 1.6, -1.88], mats.wood);
   box(bathroom, 'bathroom mirror', [0.78, 0.9, 0.035], [0.85, 1.61, -1.815], mats.glass);
   cylinder(bathroom, 'vanity tap', 0.035, 0.035, 0.22, [0.85, 1.08, 0.38], mats.metal, 8);
-  box(scene, 'bathroom sign', [1.15, 0.34, 0.07], [-10.5, 2.08, 5.22], mats.navy);
-  box(scene, 'bathroom sign inlay', [0.6, 0.035, 0.035], [-10.5, 2.08, 5.17], mats.lamp);
+  box(scene, 'bathroom sign', [1.15, 0.34, 0.07], [-10.5, 2.08, 6.93], mats.navy);
+  box(scene, 'bathroom sign inlay', [0.6, 0.035, 0.035], [-10.5, 2.08, 6.88], mats.lamp);
 
   // Partitioned dining room: dining table, chairs, plates, fruit and a serving counter.
   const dining = group(scene, 'dining room', [5.15, 0, 6.08]);
@@ -606,13 +606,16 @@ export function createOffice(host, { onSelect } = {}) {
   };
 
   const roomViews = {
-    all: { position: [23, 20, 25], target: [0, 1.05, 0] },
+    all: { position: [25, 22, 28], target: [0, 1.05, 1.4] },
     boss: { position: [10.5, 8.5, 13], target: [-1.65, 1.05, 3.3] },
     studio: { position: [12, 10, 16], target: [0.2, 1, -3.0] },
-    meeting: { position: [10.5, 8.5, 12], target: [10.1, 1, 0.1] },
+    meeting: { position: [14, 10, 13], target: [10.1, 1, 0.4] },
     lounge: { position: [14, 10, 10], target: [5.7, 1, -0.1] },
-    games: { position: [13, 9, 12], target: [6.2, 0.8, 2.8] },
-    pantry: { position: [9, 9, 14], target: [-6.4, 1, 1.9] }
+    games: { position: [13, 9, 12], target: [6.2, 0.8, 2.0] },
+    pantry: { position: [9, 9, 14], target: [-6.4, 1, 1.9] },
+    bathroom: { position: [-2.5, 8.8, 13], target: [-10.5, 1.25, 5.0] },
+    dining: { position: [13, 9.5, 16], target: [5.15, 1, 6.0] },
+    pool: { position: [18.5, 10.5, 19.5], target: [11.35, 0.5, 10.55] }
   };
   const focusRoom = (room) => {
     const view = roomViews[room] || roomViews.all;
