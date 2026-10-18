@@ -650,8 +650,10 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
   }
   if (minute < PRAYER_TIMES.fajr.end) return prayer('Fajr prayer')
   if (minute < 6 * 60) {
-    // Six-minute turns give each agent a bathroom/shower slot while the rest get ready by their beds.
-    const turn = Math.floor((minute - 5 * 60) / 6)
+    // Split the full 60-minute preparation window across the actual crew size, so every agent
+    // has a scheduled bathroom/shower turn before breakfast even when the office has 20+ people.
+    const turnDuration = 60 / count
+    const turn = Math.floor((minute - 5 * 60) / turnDuration)
     const bathroomSeat = turn + 1
     if (seat - 1 < turn) return action('bedroom', 'Idle', 'Getting dressed after showering', 'Getting ready')
     if (seat === bathroomSeat) return action('bathroom', 'Idle', 'Showering · brushing teeth', 'Bathroom turn')
@@ -747,7 +749,9 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
     return action(stop, 'Idle', activity, 'Leisure')
   }
   if (minute < 22 * 60) {
-    const turn = Math.floor((minute - (21 * 60 + 30)) / 3)
+    // The 30-minute bedtime window is divided by crew size as well, avoiding skipped bathroom turns.
+    const turnDuration = 30 / count
+    const turn = Math.floor((minute - (21 * 60 + 30)) / turnDuration)
     const bathroomSeat = turn + 1
     if (seat - 1 < turn) return action('bedroom', 'Idle', 'Getting ready for bed after brushing teeth', 'Getting ready for bed')
     if (seat === bathroomSeat) return action('bathroom', 'Idle', 'Brushing teeth before bed', 'Bedtime routine')
