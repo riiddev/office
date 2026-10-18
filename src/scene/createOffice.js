@@ -7,7 +7,7 @@ const material = (color, roughness = 0.85, extra = {}) => new THREE.MeshStandard
 
 export function createOffice(host, { onSelect } = {}) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#e8e8d8');
+  scene.background = new THREE.Color('#d8d9cc');
   scene.fog = new THREE.Fog('#d8d9cc', 36, 72);
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
@@ -242,7 +242,7 @@ export function createOffice(host, { onSelect } = {}) {
   }
 
   // Pantry with fridge, counter, coffee machine and tiny galon.
-  const pantry = group(scene, 'pantry', [-6.6, 0, 2.5]);
+  const pantry = group(scene, 'pantry', [-6.2, 0, 2.5]);
   box(pantry, 'counter', [3.8, 0.88, 1.15], [0, 0.59, -0.2], mats.woodLight);
   box(pantry, 'counter top', [4, 0.12, 1.28], [0, 1.07, -0.2], mats.cream);
   box(pantry, 'cabinet', [0.82, 1.9, 0.8], [-1.2, 1.08, -1.15], mats.white);
@@ -586,7 +586,7 @@ export function createOffice(host, { onSelect } = {}) {
     { x1: 6.65, x2: 8.35, z1: 2.95, z2: 4.55 },
     { x1: 5.0, x2: 7.4, z1: 3.3, z2: 4.4 },
     // Pantry counters / fridge.
-    { x1: -8.96, x2: -4.28, z1: 1.18, z2: 3.28 },
+    { x1: -8.1, x2: -4.3, z1: 0.9, z2: 3.15 },
     // Executive desk and visitor seating.
     { x1: -4.15, x2: 0.82, z1: 1.76, z2: 4.18 },
     // Boss room's glass / wood partitions; the front remains open.
