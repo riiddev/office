@@ -125,13 +125,17 @@ function App() {
       </div>
     </header>
 
-    <section className="hq-intro animate-in">
+    <section className="hq-intro hq-hero animate-in">
+      <div className="hq-hero-orbit" aria-hidden="true"><span className="orbit-ring orbit-ring-one" /><span className="orbit-ring orbit-ring-two" /><span className="orbit-core" /><span className="orbit-satellite orbit-satellite-one" /><span className="orbit-satellite orbit-satellite-two" /></div>
       <div className="hq-intro-copy">
         <p className="eyebrow"><span>✦</span> FOUNDER'S FLOOR · BOSS MODE</p>
         <h1>Welcome to your HQ,<br /><em>Boss.</em></h1>
         <p className="intro-copy">Your own living 3D headquarters. Walk the floor, check in on your crew,<br className="desktop-break" /> and send the next big idea into motion.</p>
       </div>
-      <div className="preview-notice"><span className="preview-notice-icon">⌁</span><span><strong>Your office, your rules</strong><small>9 AI coworkers · illustrative activity is marked as demo.</small></span><span className="notice-arrow">↗</span></div>
+      <div className="hq-hero-side">
+        <div className="hq-hero-signal"><span className="hq-signal-dot" /><span>YOUR WORLD IS RUNNING</span><strong>09 <small>CREW MEMBERS</small></strong><div className="hq-signal-bars"><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /></div><small className="hq-signal-foot">A little office with big ideas.</small></div>
+        <div className="preview-notice"><span className="preview-notice-icon">⌁</span><span><strong>Your office, your rules</strong><small>9 AI coworkers · illustrative activity is marked as demo.</small></span><span className="notice-arrow">↗</span></div>
+      </div>
     </section>
 
     <section className="hq-stats animate-in" aria-label="Agent overview">
@@ -150,6 +154,8 @@ function App() {
         </div>
         <div className="world-stage hq-world-stage">
           <div className="scene-host" ref={sceneHost} />
+          <div className="hq-stage-topline"><span className="hq-stage-pulse" /> SPATIAL SIMULATION <span className="hq-stage-separator">/</span> <span>LIVE CAMERA</span></div>
+          <div className="hq-stage-corner hq-stage-corner-one" /><div className="hq-stage-corner hq-stage-corner-two" />
           <div className="scene-stamp hq-scene-stamp"><span>RIIDDEV</span><strong>agent habitat</strong><span>♡ & tiny tasks</span></div>
           <div className="scene-compass"><span>N</span><div className="compass-needle" /><span>S</span></div>
           <div className="scene-caption"><span className="caption-pin">⌖</span><span><strong>{rooms.find((room) => room.id === activeRoom)?.label || 'Whole office'}</strong><small>Drag to orbit · scroll to zoom · click a character</small></span></div>
