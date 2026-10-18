@@ -915,6 +915,14 @@ export function createOffice(host, { onSelect } = {}) {
       const bossWave = elapsed * bossMotion.stepRate + bossMotion.phase;
       if (bossMotion.walking) {
         const waypoint = bossRoute[bossMotion.target];
+        // Look ahead before reaching each intermediate node. A* already
+        // returns line-of-sight-safe segments, so this removes the stop-start
+        // footwork at every corner without cutting through obstacles.
+        while (bossMotion.pathIndex < bossMotion.route.length - 1) {
+          const probe = bossMotion.route[bossMotion.pathIndex];
+          if (Math.hypot(probe[0] - bossRoot.position.x, probe[1] - bossRoot.position.z) >= 0.34) break;
+          bossMotion.pathIndex++;
+        }
         const pathPoint = bossMotion.route[bossMotion.pathIndex];
         if (!pathPoint) {
           bossRoot.position.x = waypoint.x;
@@ -1065,6 +1073,13 @@ export function createOffice(host, { onSelect } = {}) {
       if (reducedMotion) return;
 
       if (motion.walking) {
+        // Advance across close route nodes before stepping, keeping motion
+        // continuous while preserving the A* collision-safe path.
+        while (motion.pathIndex < motion.route.length - 1) {
+          const probe = motion.route[motion.pathIndex];
+          if (Math.hypot(probe[0] - character.position.x, probe[1] - character.position.z) >= 0.34) break;
+          motion.pathIndex++;
+        }
         const waypoint = motion.route[motion.pathIndex];
         if (!waypoint) {
           motion.walking = false;
