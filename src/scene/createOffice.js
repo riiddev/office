@@ -11,7 +11,7 @@ export function createOffice(host, { onSelect } = {}) {
   scene.fog = new THREE.Fog('#d8d9cc', 36, 72);
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-  camera.position.set(23, 20, 25);
+  camera.position.set(26, 22, 31);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -29,7 +29,7 @@ export function createOffice(host, { onSelect } = {}) {
   controls.minDistance = 12;
   controls.maxDistance = 44;
   controls.maxPolarAngle = Math.PI * 0.47;
-  controls.target.set(0, 1.0, 2.2);
+  controls.target.set(0, 1.0, 4.0);
 
   scene.add(new THREE.HemisphereLight('#fff7eb', '#65715d', 1.05));
   const sun = new THREE.DirectionalLight('#fff1da', 1.85);
@@ -820,7 +820,7 @@ export function createOffice(host, { onSelect } = {}) {
     stone.rotation.y = i * 0.3;
   }
 
-  const originalCamera = new THREE.Vector3(23, 20, 25);
+  const originalCamera = new THREE.Vector3(26, 22, 31);
   const resize = () => {
     const width = Math.max(host.clientWidth, 320);
     const height = Math.max(host.clientHeight, 320);
@@ -851,7 +851,7 @@ export function createOffice(host, { onSelect } = {}) {
   };
 
   const roomViews = {
-    all: { position: [28, 23, 34], target: [0, 1.0, 4.0] },
+    all: { position: [26, 22, 31], target: [0, 1.0, 4.0] },
     boss: { position: [10.5, 8.5, 13], target: [-1.65, 1.05, 3.3] },
     studio: { position: [12, 10, 16], target: [0.2, 1, -3.0] },
     meeting: { position: [14, 10, 13], target: [10.1, 1, 0.4] },
