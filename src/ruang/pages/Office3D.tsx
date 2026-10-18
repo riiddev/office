@@ -30,9 +30,10 @@ const seedOf = (id: string) => { let hash = 0; for (let index = 0; index < id.le
 const smooth = (edge0: number, edge1: number, value: number) => { const x = Math.min(1, Math.max(0, (value - edge0) / (edge1 - edge0))); return x * x * (3 - 2 * x) }
 const WALK_SPEED = 1.55
 
-function Character({ station, placement, layout, floor, onSelect, anchor }: { station: OfficeStation & { routineStop?: DailyStop }; placement: Placement; layout: OfficeLayout; floor: Floor; onSelect: (station: OfficeStation, trigger: HTMLElement | null) => void; anchor: (object: THREE.Object3D | null) => void }) {
+function Character({ station, placement, layout, floor, onSelect, anchor, prayerSessionStart, prayerCycleDuration }: { station: OfficeStation & { routineStop?: DailyStop }; placement: Placement; layout: OfficeLayout; floor: Floor; onSelect: (station: OfficeStation, trigger: HTMLElement | null) => void; anchor: (object: THREE.Object3D | null) => void; prayerSessionStart: number; prayerCycleDuration: number }) {
   const root = useRef<THREE.Group>(null)
   const body = useRef<THREE.Group>(null)
+  const torso = useRef<THREE.Group>(null)
   const head = useRef<THREE.Group>(null)
   const leftEye = useRef<THREE.Group>(null)
   const rightEye = useRef<THREE.Group>(null)
@@ -57,7 +58,7 @@ function Character({ station, placement, layout, floor, onSelect, anchor }: { st
     const floorPose = placement.pose === 'floor' ? 1 : 0
     const lie = placement.pose === 'lie' ? 1 : 0
     const legs = sit || floorPose ? -Math.PI / 2.2 : 0
-    return { speed: 0, phase: seed, sit, lie, floor: floorPose, legL: legs, legR: legs, armL: 0, armR: 0, armLz: 0, armRz: 0, headYaw: 0, headPitch: 0, headRoll: 0, lean: 0, sway: 0, bodyY: lie * ((placement.height ?? 0.5) + 0.16) + (1 - lie) * (-0.14 * sit - 0.5 * floorPose), bobY: 0, twist: 0 }
+    return { speed: 0, phase: seed, sit, lie, floor: floorPose, legL: legs, legR: legs, armL: 0, armR: 0, armLz: 0, armRz: 0, headYaw: 0, headPitch: 0, headRoll: 0, lean: 0, sway: 0, bodyY: lie * ((placement.height ?? 0.5) + 0.16) + (1 - lie) * (-0.14 * sit - 0.5 * floorPose), bobY: 0, twist: 0, torsoX: 0, prayerY: 0 }
   })())
   useEffect(() => {
     const group = root.current
@@ -620,7 +621,7 @@ function useFloor(): [Floor, (floor: Floor) => void] {
   }]
 }
 
-export default function Office3D({ stations: crew, onSelect, themeOverride, focusRoom = 'all', simulationNow = Date.now() }: { stations: OfficeStation[]; onSelect: (station: OfficeStation, trigger: HTMLElement | null) => void; themeOverride?: 'dark' | 'light'; focusRoom?: string; simulationNow?: number }) {
+export default function Office3D({ stations: crew, onSelect, themeOverride, focusRoom = 'all', simulationNow = Date.now(), simulationRate = 60 }: { stations: OfficeStation[]; onSelect: (station: OfficeStation, trigger: HTMLElement | null) => void; themeOverride?: 'dark' | 'light'; focusRoom?: string; simulationNow?: number; simulationRate?: number }) {
   const anchors = useRef(new Map<string, THREE.Object3D>())
   const labels = useRef(new Map<string, HTMLElement>())
   const view = useRef<ViewHandle>(null)
@@ -630,6 +631,7 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
   const theme = themeOverride ?? documentTheme
   const [floor, setFloor] = useFloor()
   const [sleepMode, setSleepMode] = useStoredFlag(SLEEP_KEY)
+  const prayerSession = useRef({ key: '', startedAt: 0 })
   const now = useClock(2000)
   const scheduleMinute = jakartaMinuteOfDay(simulationNow)
   const stations = crew.map((station): SimulatedStation => {
@@ -647,8 +649,18 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
       activity: action.activity,
       displayState: action.displayState,
       routineStop: action.stop,
+      queueRank: action.queueRank,
     }
   })
+  const prayerKey = stations.find((station) => /^(Fajr|Dhuhr|Asr|Maghrib|Isha) prayer$/.test(station.activity))?.activity ?? ''
+  if (!prayerKey) {
+    prayerSession.current.key = ''
+    prayerSession.current.startedAt = 0
+  } else if (prayerSession.current.key !== prayerKey) {
+    prayerSession.current = { key: prayerKey, startedAt: performance.now() / 1000 }
+  }
+  const prayerSessionStart = prayerSession.current.startedAt
+  const prayerCycleDuration = Math.max(3, 28 * 60 / Math.max(simulationRate, 1))
 
   // One unlabeled desk per agent (hot desking); the building is sized for the crew.
   const layout = useMemo(() => createLayout(stations.length), [stations.length])
@@ -660,11 +672,18 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
   const wandering = (station: OfficeStation) => station.state === 'Idle' && station.room === 'Lounge' ? plan.get(station.seat) : undefined
   // Agents at the meeting table take the next free place around it.
   const meetingOrder = stations.filter((station) => station.roomPosition === 'meeting-area').map((station) => station.id)
+  const reservationIndex = (stop: DailyStop, station: SimulatedStation) => stations
+    .filter((candidate) => candidate.routineStop === stop)
+    .sort((a, b) => a.seat - b.seat)
+    .findIndex((candidate) => candidate.id === station.id)
   const placement = (station: SimulatedStation): Placement => {
     const seat = Math.max(station.seat, 1)
     if (station.routineStop === 'desk') return placementFor(station, layout)
     if (station.routineStop === 'meeting') return placementFor(station, layout, Math.max(0, meetingOrder.indexOf(station.id)))
-    if (station.routineStop === 'bathroom') return BATHROOM_SPOTS[(seat - 1) % BATHROOM_SPOTS.length]
+    if (station.routineStop === 'musholla') return mushollaSpot(Math.max(0, reservationIndex('musholla', station)))
+    if (station.routineStop === 'dining') return diningSpot(Math.max(0, reservationIndex('dining', station)))
+    if (station.routineStop === 'bathroom-queue') return bathroomQueueSpot(Math.max(0, station.queueRank ?? reservationIndex('bathroom-queue', station)))
+    if (station.routineStop === 'bathroom') return BATHROOM_SPOTS[0]
     if (station.routineStop === 'bedroom' || station.routineStop === 'tidur') {
       const beds = layout.idleStops.find((stop) => stop.key === 'tidur')
       const bed = beds?.spots[(seat - 1) % (beds.spots.length || 1)]
@@ -674,13 +693,7 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
     }
     const stop = layout.idleStops.find((item) => item.key === station.routineStop)
     const spot = stop?.spots[(seat - 1) % (stop.spots.length || 1)]
-    if (spot) {
-      // The lesehan is the existing prayer area; stand there for prayer, then reuse the same mat locations.
-      if (station.routineStop === 'lesehan' && /prayer/i.test(station.activity)) {
-        return { position: spot.position, facing: spot.facing, seated: false, label: 'Prayer area' }
-      }
-      return spot
-    }
+    if (spot) return spot
     return wandering(station)?.placement ?? placementFor(station, layout, Math.max(0, meetingOrder.indexOf(station.id)))
   }
   const floorCount = (value: Floor) => stations.filter((station) => floorOf(placement(station).position) === value).length
@@ -717,7 +730,7 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
       <Lighting theme={theme}/>
       <Environment night={theme === 'dark'} layout={layout} floor={floor}/>
       {floor === 1 && layout.desks.map((position, index) => <WorkDesk key={index} position={position} active={occupiedSeats.has(index + 1)} withChair/>)}
-      {stations.map((station) => <Character key={station.id} station={station} placement={placement(station)} layout={layout} floor={floor} onSelect={onSelect} anchor={register(anchors, `agent-${station.id}`)}/>)}
+      {stations.map((station) => <Character key={station.id} station={station} placement={placement(station)} layout={layout} floor={floor} onSelect={onSelect} prayerSessionStart={prayerSessionStart} prayerCycleDuration={prayerCycleDuration} anchor={register(anchors, `agent-${station.id}`)}/>)}
       <LabelProjector anchors={anchors} labels={labels}/>
       <Controls key={layout.deskCount} ref={view} panMode={panMode} keyTarget={keyTarget} layout={layout} elevation={floor === 2 ? FLOOR_HEIGHT : 0}/>
     </Canvas>
