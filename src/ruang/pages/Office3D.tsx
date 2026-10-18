@@ -617,6 +617,17 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
     stop, state, activity, displayState, ...(queueRank === undefined ? {} : { queueRank }),
   })
   const choice = (stops: DailyStop[], offset = 0) => stops[(seat - 1 + offset) % stops.length]
+  /** Assign seats in capacity-sized blocks so a shared room never receives more agents than spots. */
+  const capacityChoice = (options: { stop: DailyStop; capacity: number }[]): DailyStop => {
+    let remaining = seat - 1
+    for (const option of options) {
+      if (remaining < option.capacity) return option.stop
+      remaining -= option.capacity
+    }
+    // The current office's ordinary crew fits before this fallback. Keep overflow in the largest
+    // shared space until a dedicated queue is selected by the schedule.
+    return options[options.length - 1]?.stop ?? 'dining'
+  }
   const work = (wrapUp = false): RoutineAction => {
     const reviewing = wrapUp ? seat % 2 === 0 : seat % 4 === 0
     return action('desk', reviewing ? 'Reviewing' : 'Working', wrapUp ? (reviewing ? 'Reviewing final tasks' : 'Finishing work') : (reviewing ? 'Reviewing code and notes' : 'Working at the computer'), reviewing ? 'Reviewing' : 'Working')
@@ -668,7 +679,14 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
   if (minute < PRAYER_TIMES.asr.end) return prayer('Asr prayer')
   if (minute < 17 * 60 + 30) return work(true)
   if (minute < PRAYER_TIMES.maghrib.start - 10) {
-    return action(choice(['lounge', 'balkon', 'game']), 'Idle', 'Unwinding after work', 'After work')
+    const stop = capacityChoice([
+      { stop: 'lounge', capacity: 3 },
+      { stop: 'balkon', capacity: 4 },
+      { stop: 'game', capacity: 3 },
+      { stop: 'arcade', capacity: 3 },
+      { stop: 'dining', capacity: 12 },
+    ])
+    return action(stop, 'Idle', 'Unwinding after work', 'After work')
   }
   if (minute < PRAYER_TIMES.maghrib.start) return headingToPrayer()
   if (minute < PRAYER_TIMES.maghrib.end) return prayer('Maghrib prayer')
@@ -685,7 +703,8 @@ function dailyRoutine(station: OfficeStation, minute: number, crewCount: number)
       : stop === 'game' || stop === 'arcade' ? 'Playing games together'
       : stop === 'balkon' ? 'Reading and relaxing on the balcony'
       : 'Relaxing around the dining tables'
-    return action(offset % 5 === 4 ? choice(['lounge', 'balkon']) : stop, 'Idle', activity, 'Leisure')
+    // Phone use changes the gesture, not the destination; keep the same capacity-balanced room assignment.
+    return action(stop, 'Idle', activity, 'Leisure')
   }
   if (minute < 22 * 60) {
     const turn = Math.floor((minute - (21 * 60 + 30)) / 3)
@@ -812,7 +831,8 @@ export default function Office3D({ stations: crew, onSelect, themeOverride, focu
         : { position: [bed.position[0] + 0.75, FLOOR_HEIGHT, bed.position[2] - 0.25], facing: 0, seated: false, label: 'Getting ready in the bedroom' }
     }
     const stop = layout.idleStops.find((item) => item.key === station.routineStop)
-    const spot = stop?.spots[(seat - 1) % (stop.spots.length || 1)]
+    const stopSeat = reservationIndex(station.routineStop, station)
+    const spot = stop?.spots[stopSeat]
     if (spot) return spot
     return wandering(station)?.placement ?? placementFor(station, layout, Math.max(0, meetingOrder.indexOf(station.id)))
   }
