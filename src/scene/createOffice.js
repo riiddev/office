@@ -167,12 +167,12 @@ export function createOffice(host, { onSelect } = {}) {
     for (const sx of [-0.25, 0.25]) box(chair, 'chair foot', [0.1, 0.08, 0.54], [sx, 0.06, 0], mats.metal);
     return d;
   };
-  makeDesk(-6.7, -3.35, '#e8ae77', 'Creative');
-  makeDesk(-3.5, -3.35, '#8fc3b5', 'Developer');
-  makeDesk(-0.25, -3.35, '#b8a5dd', 'Designer');
-  makeDesk(3.0, -4.65, '#e6b172', 'Research pod');
-  makeDesk(6.05, -4.65, '#83a8d3', 'Design pod');
-  makeDesk(9.1, -4.65, '#80b6a4', 'Operations pod');
+  makeDesk(-6.7, -2.45, '#e8ae77', 'Creative');
+  makeDesk(-3.5, -2.45, '#8fc3b5', 'Developer');
+  makeDesk(-0.25, -2.45, '#b8a5dd', 'Designer');
+  makeDesk(3.0, -5.9, '#e6b172', 'Research pod');
+  makeDesk(6.05, -5.9, '#83a8d3', 'Design pod');
+  makeDesk(9.1, -5.9, '#80b6a4', 'Operations pod');
 
   // A shared wall board for sprint notes and a room-wide planning surface.
   box(scene, 'sprint board frame', [4.2, 1.85, 0.16], [6.7, 2.45, -7.4], mats.wood);
@@ -367,7 +367,7 @@ export function createOffice(host, { onSelect } = {}) {
 
   // Low glass partitions divide the studio into quieter work pods while keeping sightlines.
   const workDividers = [
-    [-5.0, -3.92], [-1.82, -3.92], [1.42, -4.58], [4.56, -4.58], [7.68, -4.58]
+    [-5.0, -3.0], [-1.82, -3.0], [1.42, -5.35], [4.56, -5.35], [7.68, -5.35]
   ];
   workDividers.forEach(([x, z], i) => {
     box(scene, 'work pod divider base', [0.11, 0.64, 1.82], [x, 0.36, z], mats.woodLight);
@@ -537,15 +537,15 @@ export function createOffice(host, { onSelect } = {}) {
   // Characters are deliberately simple toy-like figures; their wandering is decorative.
   const characterGroups = [];
   const waypoints = [
-    [[-7.5, 0, -1.15], [-5.3, 0, -1.1], [-3.6, 0, -1.15], [-7.8, 0, -1.15]],
-    [[-4.4, 0, -0.8], [-2.5, 0, -0.8], [-2.5, 0, 1.4], [-4.5, 0, -0.4]],
-    [[1.8, 0, -0.8], [2.9, 0, -0.6], [2.6, 0, 1.6], [1.8, 0, -0.8]],
+    [[-7.5, 0, -0.15], [-5.3, 0, -0.1], [-3.6, 0, -0.15], [-7.8, 0, -0.15]],
+    [[-4.4, 0, -0.8], [-2.7, 0, -0.8], [-2.7, 0, 1.4], [-4.5, 0, -0.4]],
+    [[2.0, 0, -0.5], [3.0, 0, -0.3], [2.6, 0, 1.6], [2.0, 0, -0.5]],
     [[9.2, 0, 2.7], [11.5, 0, 2.7], [12.0, 0, -2.7], [9.2, 0, -2.8]],
     [[-7.8, 0, 3.8], [-7.5, 0, 6.2], [-7.8, 0, 6.7], [-8.0, 0, 4.0]],
     [[6.0, 0, 2.8], [6.0, 0, 3.0], [6.2, 0, 2.8], [6.0, 0, 2.8]],
     [[8.4, 0, -2.8], [8.4, 0, -2.3], [8.4, 0, -2.8], [9.1, 0, -2.3]],
     [[9.4, 0, 3.2], [9.4, 0, 6.2], [11.6, 0, 6.2], [9.4, 0, 3.2]],
-    [[1.6, 0, -1.1], [2.0, 0, -1.1], [2.2, 0, 1.5], [1.6, 0, -1.1]]
+    [[2.0, 0, -0.4], [2.3, 0, -0.2], [2.2, 0, 1.5], [2.0, 0, -0.4]]
   ];
   // Navigation mesh: padded furniture footprints and room partitions. All agents
   // use the same route planner so their paths bend around props instead of
@@ -563,18 +563,18 @@ export function createOffice(host, { onSelect } = {}) {
     { x1: 12.52, x2: 13.0, z1: -7.85, z2: 7.82 },
     { x1: -13.0, x2: 13.0, z1: -7.85, z2: -7.42 },
     // Desk and chair envelopes, expanded with a walking clearance.
-    { x1: -8.34, x2: -5.06, z1: -4.88, z2: -1.84 },
-    { x1: -5.56, x2: -1.45, z1: -4.88, z2: -1.84 },
-    { x1: -2.3, x2: 1.8, z1: -4.88, z2: -1.84 },
-    { x1: 1.33, x2: 4.7, z1: -6.15, z2: -3.05 },
-    { x1: 4.38, x2: 7.76, z1: -6.15, z2: -3.05 },
-    { x1: 7.42, x2: 10.8, z1: -6.15, z2: -3.05 },
+    { x1: -8.34, x2: -5.06, z1: -3.5, z2: -0.65 },
+    { x1: -5.56, x2: -1.45, z1: -3.5, z2: -0.65 },
+    { x1: -2.3, x2: 1.8, z1: -3.5, z2: -0.65 },
+    { x1: 1.33, x2: 4.7, z1: -6.9, z2: -4.1 },
+    { x1: 4.38, x2: 7.76, z1: -6.9, z2: -4.1 },
+    { x1: 7.42, x2: 10.8, z1: -6.9, z2: -4.1 },
     // Glass pod dividers between workstations.
-    { x1: -5.12, x2: -4.88, z1: -4.95, z2: -2.87 },
-    { x1: -1.94, x2: -1.7, z1: -4.95, z2: -2.87 },
-    { x1: 1.3, x2: 1.54, z1: -5.62, z2: -3.55 },
-    { x1: 4.44, x2: 4.68, z1: -5.62, z2: -3.55 },
-    { x1: 7.56, x2: 7.8, z1: -5.62, z2: -3.55 },
+    { x1: -5.12, x2: -4.88, z1: -3.96, z2: -1.96 },
+    { x1: -1.94, x2: -1.7, z1: -3.96, z2: -1.96 },
+    { x1: 1.3, x2: 1.54, z1: -6.31, z2: -4.39 },
+    { x1: 4.44, x2: 4.68, z1: -6.31, z2: -4.39 },
+    { x1: 7.56, x2: 7.8, z1: -6.31, z2: -4.39 },
     // Reading nook, bookcase, lounge, and arcade room.
     { x1: -1.95, x2: 1.2, z1: -2.0, z2: 1.25 },
     { x1: -9.16, x2: -8.04, z1: -3.08, z2: -0.12 },
