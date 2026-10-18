@@ -406,3 +406,24 @@ h2 { font: 700 21px/1.2 Manrope, sans-serif; letter-spacing: -.7px; margin-botto
   .hq-panel-foot { align-items:flex-start; flex-direction:column; } .hq-footer { justify-content:center; } .hq-footer>span:nth-child(2) { display:none; }
   .hq-connect-modal { padding:24px 19px; } .hq-connect-modal h2 { font-size:24px; } .source-state { max-width:85px; white-space:normal; text-align:right; }
 }
+
+
+/* Cloud task dispatch */
+.dispatch-form { display:grid; gap:11px; margin-top:16px; }
+.dispatch-field { display:grid; gap:7px; color:#626b5d; font-size:10px; font-weight:700; }
+.dispatch-field input,.dispatch-field textarea { width:100%; border:1px solid #e3ddcf; border-radius:10px; padding:11px 12px; background:#fffef9; color:#3b4038; font:10px/1.65 'DM Sans',sans-serif; outline:none; transition:border-color .18s,box-shadow .18s; }
+.dispatch-field input:focus,.dispatch-field textarea:focus { border-color:#86a888; box-shadow:0 0 0 3px #86a88825; }
+.dispatch-field textarea { min-height:118px; resize:vertical; }
+.dispatch-field input::placeholder,.dispatch-field textarea::placeholder { color:#aaa99a; font-weight:400; }
+.dispatch-hint { display:flex; justify-content:space-between; gap:12px; color:#9a9b8d; font:8px 'DM Mono',monospace; }
+.dispatch-submit:disabled { opacity:.55; cursor:not-allowed; box-shadow:none; }
+.dispatch-result,.dispatch-error { display:grid; gap:7px; padding:12px; border-radius:10px; font-size:9px; line-height:1.6; }
+.dispatch-result { border:1px solid #dce7d7; background:#f0f5e9; color:#60785e; }
+.dispatch-error { border:1px solid #f0d8ce; background:#fff2ec; color:#935e4d; }
+.dispatch-result>div { display:flex; flex-wrap:wrap; gap:14px; margin-top:2px; }
+.dispatch-result a,.dispatch-error a { color:#456c50; font-weight:700; text-decoration:underline; text-underline-offset:3px; }
+.night-mode .dispatch-field { color:#c6d0c1; }
+.night-mode .dispatch-field input,.night-mode .dispatch-field textarea { background:#252c28; color:#edf0e5; border-color:#4a5549; }
+.night-mode .dispatch-result { background:#303d31; border-color:#4b604b; color:#c0d7b7; }
+.night-mode .dispatch-error { background:#44342e; border-color:#65473c; color:#e5b7a5; }
+.night-mode .dispatch-result a,.night-mode .dispatch-error a { color:#d1e5c7; }

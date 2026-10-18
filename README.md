@@ -1,27 +1,34 @@
 # Riiddev Agent HQ
 
-A cozy Sims-inspired 3D command center for AI agents, built with React, Vite, Three.js and GSAP.
+A cozy Sims-inspired 3D command center for AI-assisted work, built with React, Vite, Three.js and GSAP.
 
-## Current milestone: visual HQ preview
+## Current milestone: cloud task dispatch foundation
 
 - Interactive procedural 3D office with studio, lounge, game room and pantry views.
-- Tiny agent characters with status orbs and click-to-select behavior in the 3D scene.
-- Agent roster, selected-agent details, example task pipeline and activity stream.
-- Day/night mode, responsive layout and reduced-motion support.
-- A connection-planning modal for a future local agent bridge.
+- Tiny illustrated crew and a sample task/activity feed (clearly labeled as demo data).
+- Secure Vercel API endpoint that can create an issue in `riiddev/office` and trigger OpenCode through an issue comment.
+- OpenCode runs in a GitHub Actions runner, not on your personal computer. Changes should be delivered as a pull request; the workflow does not merge automatically.
 
-**Important:** this milestone uses clearly labelled sample data. No AI agent is connected, no actual tasks are executed and the activity stream is not live yet. The "Connect agent" modal explains the intended next step; its button only copies the integration plan.
+**Important:** the dashboard roster, sample task cards, and activity stream are still simulated. Cloud task submission becomes active only after the setup below is completed. No AI agent is connected by default.
 
-## Roadmap
+## Enable cloud task execution
 
-1. **Visual preview** — current milestone.
-2. **Local read-only bridge** — run a small Node.js service on the same computer to read agent status, task metadata and recent events from a chosen runtime.
-3. **First adapter** — choose OpenCode or OpenClaw and map its real data into the HQ schema.
-4. **Safe actions** — after read-only status is stable, add explicit user-approved actions with clear confirmation and logs.
+1. **Install the OpenCode GitHub App** on the `riiddev/office` repository: https://github.com/apps/opencode-agent
+2. In `riiddev/office` → **Settings → Secrets and variables → Actions → New repository secret**, add `OPENAI_API_KEY`. The workflow currently uses `openai/gpt-6.1-sol`; API usage is billed separately from a ChatGPT subscription.
+3. Create a **fine-grained GitHub personal access token** restricted to this repository, with **Issues: Read and write**. The token is used only by the Vercel endpoint to create task issues/comments; the OpenCode app handles the agent workflow.
+4. In Vercel → `kantorriddev` → **Settings → Environment Variables**, add:
+   - `GITHUB_ISSUES_TOKEN` = the fine-grained token from step 3.
+   - `HQ_ACCESS_TOKEN` = a long random secret you choose. Use the exact same value when sending a task from the dashboard.
+   Select **Production** (and Preview too, if you test preview deployments), save, then redeploy.
+5. Open https://kantorriddev.vercel.app, click **Run cloud task**, enter the `HQ_ACCESS_TOKEN` value, and describe the task. The dashboard creates an issue and adds an `/opencode` comment. Review the task issue and pull request in GitHub.
 
-Keep agent credentials and private runtime data on the local machine. Do not put API keys in browser source. A future bridge should bind to localhost by default, validate requests, and expose only the minimal normalized fields needed by the UI.
+**Security notes**
+- Never put `GITHUB_ISSUES_TOKEN` or an LLM API key in frontend code, local storage, or task text.
+- The task issue is created in the GitHub repository. Avoid submitting private information, passwords, customer data, or API keys.
+- The endpoint is scoped to `riiddev/office`, limits task prompts to 3,000 characters, and checks `HQ_ACCESS_TOKEN`.
+- Review generated code and CI results before merging any pull request.
 
-## Requirements
+## Requirements for local development
 
 - Node.js 20 or newer
 - npm
