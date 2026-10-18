@@ -1376,3 +1376,31 @@ body:has(.virtual-shell) {
  .v-ruang-host .speech-3d { max-width:112px; font-size:8px; }
 }
 @media(prefers-reduced-motion:reduce) { .v-ruang-host .speech { animation:none!important; } }
+
+/* ── Immersive layout: the 3D office is the page's main attraction ───────────────────── */
+.virtual-shell { display: flex; flex-direction: column; padding-left: clamp(8px, 1.2vw, 20px); padding-right: clamp(8px, 1.2vw, 20px); padding-bottom: 14px; }
+.virtual-shell > .v-topbar { order: 0; min-height: 58px; }
+.virtual-shell > .v-world-layout { order: 1; }
+.virtual-shell > .v-intro { order: 2; }
+.virtual-shell > .v-crew-section { order: 3; }
+.virtual-shell > .v-footer { order: 4; }
+.v-world-stage { height: calc(100vh - 128px); height: calc(100svh - 128px); min-height: 520px; margin-top: 6px; border-radius: 20px; }
+.v-stage-foot { min-height: 44px; padding: 6px 6px 2px; }
+/* The in-scene floor switcher and tools used to sit under the docks; give them their own spots. */
+.v-ruang-host .office-3d-floors { left: 214px; top: 58px; }
+.v-ruang-host .office-3d-tools { right: 64px; bottom: 19px; }
+@media (max-width: 1250px) { .v-ruang-host .office-3d-floors { left: 196px; } }
+@media (max-width: 980px) {
+  .v-world-stage { height: calc(100svh - 120px); min-height: 600px; }
+  .v-ruang-host .office-3d-floors { left: 17px; top: 116px; }
+  .v-ruang-host .office-3d-tools { left: 17px; right: auto; top: 156px; bottom: auto; }
+}
+@media (max-width: 680px) {
+  .virtual-shell { padding-left: 6px; padding-right: 6px; }
+  .v-world-stage { height: calc(100svh - 112px); min-height: 560px; border-radius: 16px; }
+  .v-agent-dock { max-height: 150px; }
+  .v-agent-dock-top, .v-orbit-hint { display: none; }
+  .v-stage-legend { display: none; }
+  .v-ruang-host .office-3d-floors { left: 10px; top: 98px; }
+  .v-ruang-host .office-3d-tools { left: 10px; top: 136px; }
+}
