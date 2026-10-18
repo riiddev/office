@@ -136,7 +136,7 @@ export function mushollaSpot(index: number, groupSize = MUSHOLLA.capacity): Plac
   const followersInRow = Math.min(MUSHOLLA.columns, Math.max(1, followerCount - row * MUSHOLLA.columns))
   const centeredColumn = column - (followersInRow - 1) / 2
   const x = MUSHOLLA.x + centeredColumn * MUSHOLLA.columnSpacing
-  const z = MUSHOLLA.z - 1.0 + row * MUSHOLLA.rowSpacing
+  const z = MUSHOLLA.z - 0.82 + row * MUSHOLLA.rowSpacing
   return upstairs(x, z, MUSHOLLA.facing, { label: `Saf ${row + 1}` })
 }
 

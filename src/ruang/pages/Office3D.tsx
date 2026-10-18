@@ -112,7 +112,7 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
         const turn = Math.abs(angleTo(group.rotation.y, heading))
         // Ease in from rest, ease out towards the final spot, and slow for sharp turns instead of sliding sideways.
         const approach = finalLeg ? 0.35 + distance * 1.6 : 1
-        const target = WALK_SPEED * Math.max(1, simulationRate / 50) * Math.min(1, approach) * (1 - Math.min(0.7, turn / 2.2))
+        const target = WALK_SPEED * Math.max(1, simulationRate / 28) * Math.min(1, approach) * (1 - Math.min(0.7, turn / 2.2))
         s.speed = damp(s.speed, target, target > s.speed ? 4 : 7, delta)
         const step = Math.min(distance, s.speed * delta)
         scratch.move.normalize().multiplyScalar(step)

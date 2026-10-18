@@ -221,7 +221,7 @@ function Musholla({ capacity }: { capacity: number }) {
     return {
       index, row,
       x: MUSHOLLA.x + centeredColumn * MUSHOLLA.columnSpacing,
-      z: MUSHOLLA.z - 1.0 + row * MUSHOLLA.rowSpacing,
+      z: MUSHOLLA.z - 0.82 + row * MUSHOLLA.rowSpacing,
     }
   })
   return <group>
@@ -235,16 +235,16 @@ function Musholla({ capacity }: { capacity: number }) {
     <RBox position={[MUSHOLLA.x, 1.05, back + 0.17]} size={[0.72, 0.04, 0.035]} radius={0.01} color="#e5d4a3" shadow={false}/>
     {/* Dedicated imam mat in front of the first saf; capacity counts it as seat one. */}
     <group position={[MUSHOLLA.x, 0, MUSHOLLA.z - 1.72]}>
-      <RBox position={[0, 0.028, 0]} size={[0.68, 0.035, 0.82]} radius={0.025} color="#2d6c55" roughness={0.98}/>
+      <RBox position={[0, 0.028, 0]} size={[0.68, 0.035, 0.72]} radius={0.025} color="#2d6c55" roughness={0.98}/>
       <RBox position={[0, 0.049, -0.34]} size={[0.58, 0.008, 0.025]} radius={0.006} color="#d8c898" shadow={false}/>
-      <RBox position={[-0.27, 0.049, 0]} size={[0.025, 0.008, 0.76]} radius={0.006} color="#d8c898" shadow={false}/>
-      <RBox position={[0.27, 0.049, 0]} size={[0.025, 0.008, 0.76]} radius={0.006} color="#d8c898" shadow={false}/>
+      <RBox position={[-0.27, 0.049, 0]} size={[0.025, 0.008, 0.66]} radius={0.006} color="#d8c898" shadow={false}/>
+      <RBox position={[0.27, 0.049, 0]} size={[0.025, 0.008, 0.66]} radius={0.006} color="#d8c898" shadow={false}/>
     </group>
     {mats.map(({ index, row, x, z }) => <group key={index} position={[x, 0, z]}>
-      <RBox position={[0, 0.028, 0]} size={[0.68, 0.035, 0.82]} radius={0.025} color={row % 2 === 0 ? '#4b8b71' : '#387761'} roughness={0.98}/>
+      <RBox position={[0, 0.028, 0]} size={[0.68, 0.035, 0.72]} radius={0.025} color={row % 2 === 0 ? '#4b8b71' : '#387761'} roughness={0.98}/>
       <RBox position={[0, 0.049, -0.34]} size={[0.58, 0.008, 0.025]} radius={0.006} color="#d8c898" shadow={false}/>
-      <RBox position={[-0.27, 0.049, 0]} size={[0.025, 0.008, 0.76]} radius={0.006} color="#d8c898" shadow={false}/>
-      <RBox position={[0.27, 0.049, 0]} size={[0.025, 0.008, 0.76]} radius={0.006} color="#d8c898" shadow={false}/>
+      <RBox position={[-0.27, 0.049, 0]} size={[0.025, 0.008, 0.66]} radius={0.006} color="#d8c898" shadow={false}/>
+      <RBox position={[0.27, 0.049, 0]} size={[0.025, 0.008, 0.66]} radius={0.006} color="#d8c898" shadow={false}/>
     </group>)}
   </group>
 }
