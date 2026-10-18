@@ -625,6 +625,11 @@ export function BathroomFittings({ position }: { position: Vec3 }) {
     <RBox position={[0.95, 0.4, -1.75]} size={[0.9, 0.8, 0.7]} radius={0.03} color="#5aa9c9" roughness={0.3}/>
     <RBox position={[0.95, 0.79, -1.75]} size={[0.78, 0.02, 0.58]} radius={0.01} color="#9fd3ea" opacity={0.8} roughness={0.05} shadow={false}/>
     <Cyl position={[0.75, 0.86, -1.6]} radius={0.09} height={0.12} color="#e63946"/>
+    {/* Hand-washing sink and mirror by the door, outside the shower cubicle. */}
+    <RBox position={[-0.3, 0.69, -0.55]} size={[0.62, 0.08, 0.42]} radius={0.025} color="#f6f7f5" roughness={0.25}/>
+    <RBox position={[-0.3, 0.85, -0.55]} size={[0.38, 0.015, 0.27]} radius={0.05} color="#9fd3ea" opacity={0.8} roughness={0.05} shadow={false}/>
+    <Cyl position={[-0.3, 0.88, -0.48]} radius={0.025} height={0.12} color="#9aa8ad" metalness={0.55}/>
+    <RBox position={[-0.3, 1.28, -0.78]} size={[0.48, 0.58, 0.035]} radius={0.02} color="#c3e2ea" opacity={0.28} roughness={0.05} shadow={false}/>
     <RBox position={[-0.3, 0.2, -1.8]} size={[0.42, 0.4, 0.55]} radius={0.12} color="#f6f7f5" roughness={0.25}/>
     <RBox position={[-0.3, 0.6, -2.05]} size={[0.42, 0.45, 0.16]} radius={0.04} color="#f6f7f5" roughness={0.25}/>
   </Group>
