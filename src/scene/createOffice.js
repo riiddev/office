@@ -339,14 +339,14 @@ export function createOffice(host, { onSelect } = {}) {
   for (let i = 0; i < 2; i++) cylinder(poolDeck, 'pool ladder rail', 0.035, 0.035, 0.95, [2.18 + i * 0.3, 0.73, 1.12], mats.metal, 8);
   for (let i = 0; i < 3; i++) cylinder(poolDeck, 'pool ladder step', 0.03, 0.03, 0.3, [2.18 + i * 0.15, 0.42 + i * 0.18, 1.12], mats.metal, 8);
   // Sunbeds and parasol on the dry side, away from the water.
-  for (const x of [-3.15, 3.15]) {
+  for (const x of [-3.35, 3.35]) {
     const bed = group(poolDeck, 'sun lounger', [x, 0, 0.95]);
     box(bed, 'lounger cushion', [1.35, 0.13, 0.55], [0, 0.34, 0], mats.fabric);
     box(bed, 'lounger back', [0.65, 0.1, 0.5], [0, 0.56, -0.2], mats.sofa, { rotation: [-0.18, 0, 0] });
     for (const lx of [-0.48, 0.48]) box(bed, 'lounger feet', [0.08, 0.28, 0.08], [lx, 0.18, 0], mats.metal);
   }
-  cylinder(poolDeck, 'parasol pole', 0.035, 0.035, 2.1, [-3.2, 1.05, -1.45], mats.metal, 8);
-  const parasol = cylinder(poolDeck, 'parasol canopy', 0.25, 1.25, 0.38, [-3.2, 2.0, -1.45], material('#dca979'), 16);
+  cylinder(poolDeck, 'parasol pole', 0.035, 0.035, 2.1, [-3.55, 1.05, -1.45], mats.metal, 8);
+  const parasol = cylinder(poolDeck, 'parasol canopy', 0.25, 1.25, 0.38, [-3.55, 2.0, -1.45], material('#dca979'), 16);
   parasol.scale.z = 1.1;
   addPlant(15.0, 10.8, 0.8);
 
@@ -505,7 +505,7 @@ export function createOffice(host, { onSelect } = {}) {
     { x: 4.0, z: 0.55, face: -0.25, activity: 'lounge', dwell: 5 },
     { x: -4.0, z: 3.7, face: -Math.PI / 2, activity: 'coffee', dwell: 5 },
     { x: 10.8, z: -2.8, face: 0, activity: 'review', dwell: 5 },
-    { x: 10.8, z: 12.4, face: 0.3, activity: 'pool', dwell: 6 },
+    { x: 13.2, z: 10.8, face: 0.3, activity: 'pool', dwell: 6 },
     { x: -1.65, z: 4.45, face: Math.PI, activity: 'work', dwell: 8 }
   ];
   const bossMotion = {
@@ -539,7 +539,7 @@ export function createOffice(host, { onSelect } = {}) {
     [[-7.8, 0, 3.8], [-10.6, 0, 5.3], [-10.6, 0, 5.3], [-7.8, 0, 3.8]],
     [[6.0, 0, 2.8], [6.0, 0, 3.0], [6.2, 0, 2.8], [6.0, 0, 2.8]],
     [[8.4, 0, -2.8], [8.4, 0, -2.3], [8.4, 0, -2.8], [9.1, 0, -2.3]],
-    [[9.4, 0, 3.2], [9.4, 0, 6.2], [2.5, 0, 8.25], [2.5, 0, 6.15]],
+    [[9.4, 0, 3.2], [9.4, 0, 6.2], [13.2, 0, 10.8], [13.2, 0, 15.45]],
     [[2.0, 0, -0.4], [2.3, 0, -0.2], [2.2, 0, 1.5], [2.0, 0, -0.4]]
   ];
   // Navigation mesh: padded furniture footprints and room partitions. All agents
@@ -615,14 +615,14 @@ export function createOffice(host, { onSelect } = {}) {
     { x1: 3.22, x2: 7.08, z1: 4.98, z2: 7.28 },
     // Pool water, coping, sunbeds and parasol. The surrounding deck stays walkable.
     { x1: 11.7, x2: 17.35, z1: 11.35, z2: 15.1 },
-    { x1: 10.35, x2: 11.45, z1: 11.35, z2: 15.0 },
-    { x1: 17.55, x2: 18.7, z1: 11.35, z2: 15.0 },
+    { x1: 10.95, x2: 11.85, z1: 13.55, z2: 15.0 },
+    { x1: 17.15, x2: 18.05, z1: 13.55, z2: 15.0 },
     { x1: 11.15, x2: 12.55, z1: 10.15, z2: 11.0 }
   ];
   const navBlockedAt = (x, z) => {
     if (x < navMinX || x > navMaxX || z < navMinZ || z > navMaxZ) return true;
     if (z < 10.0 && (x < -12.48 || x > 12.48)) return true;
-    const clearance = 0.22;
+    const clearance = 0.28;
     return navBlockers.some((r) =>
       x >= r.x1 - clearance && x <= r.x2 + clearance &&
       z >= r.z1 - clearance && z <= r.z2 + clearance
@@ -851,7 +851,7 @@ export function createOffice(host, { onSelect } = {}) {
   };
 
   const roomViews = {
-    all: { position: [27, 21, 31], target: [0, 1.0, 3.1] },
+    all: { position: [28, 23, 34], target: [0, 1.0, 4.0] },
     boss: { position: [10.5, 8.5, 13], target: [-1.65, 1.05, 3.3] },
     studio: { position: [12, 10, 16], target: [0.2, 1, -3.0] },
     meeting: { position: [14, 10, 13], target: [10.1, 1, 0.4] },
