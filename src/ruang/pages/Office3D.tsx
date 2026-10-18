@@ -161,12 +161,13 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
     const tapR = Math.max(0, Math.sin(t * 13.1 + 2)) * (0.55 + 0.45 * Math.sin(t * 6.3 + 1)) * (1 - think)
     const reviewing = station.state === 'Reviewing'
     const activity = station.activity.toLowerCase()
-    const praying = activity.includes('prayer')
+    const praying = activity.includes('prayer') && settled && !walking
     const eating = /eat|breakfast|lunch|dinner|snack/.test(activity)
     const drinking = /coffee|drink of water/.test(activity)
     const showering = /showering|brushing teeth/.test(activity)
     const playing = /playing games/.test(activity)
-    const prayerCycle = (t + seed * 0.7) % 9
+    const prayerElapsed = Math.max(0, performance.now() / 1000 - prayerSessionStart)
+    const prayerCycle = Math.min(24, (prayerElapsed / prayerCycleDuration) * 24)
     // Targets for every joint.
     const restLegs = -Math.PI / 2.2
     let legL = stride, legR = -stride
@@ -219,15 +220,23 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
       armR = -0.55 + Math.sin(t * 3.2 + seed + 1) * 0.4
       headYaw = Math.sin(t * 0.6 + seed) * 0.2
     }
-    let prayerTilt = 0
+    let prayerStage: 'qiyam' | 'ruku' | 'itidal' | 'sujud' | 'sitting' | 'final-sitting' = 'qiyam'
+    let torsoTarget = 0
+    let prayerYTarget = 0
+    if (prayerCycle >= 3 && prayerCycle < 5) prayerStage = 'ruku'
+    else if (prayerCycle >= 5 && prayerCycle < 6.2) prayerStage = 'itidal'
+    else if ((prayerCycle >= 6.2 && prayerCycle < 8.2) || (prayerCycle >= 9.6 && prayerCycle < 11.6) || (prayerCycle >= 17.8 && prayerCycle < 19.8) || (prayerCycle >= 21.2 && prayerCycle < 23.2)) prayerStage = 'sujud'
+    else if ((prayerCycle >= 8.2 && prayerCycle < 9.6) || (prayerCycle >= 19.8 && prayerCycle < 21.2)) prayerStage = 'sitting'
+    else if (prayerCycle >= 23.2) prayerStage = 'final-sitting'
     if (praying) {
-      // A repeating, eased standing → bow → prostration → seated prayer cycle.
-      prayerTilt = prayerCycle < 2 ? 0 : prayerCycle < 3 ? -0.62 : prayerCycle < 4 ? 0 : prayerCycle < 5.5 ? -1.25 : prayerCycle < 6.8 ? -0.35 : prayerCycle < 7.8 ? -1.25 : -0.35
-      const kneel = prayerCycle >= 4 && prayerCycle < 5.5 || prayerCycle >= 6.8
-      legL = legR = kneel ? -1.05 : prayerCycle >= 2 && prayerCycle < 3 ? -0.12 : 0
-      armL = armR = prayerCycle < 2 || prayerCycle >= 3 && prayerCycle < 4 ? -0.25 : -0.05
-      armLz = 0.02; armRz = -0.02
-      headPitch = prayerTilt * 0.55
+      // Synchronized two-rakat sequence: qiyam, ruku, itidal, two sujuds with a sitting between,
+      // then the second rakat and final sitting. Every participant uses the same session phase.
+      if (prayerStage === 'ruku') { torsoTarget = -0.58; legL = legR = 0.04; armL = armR = -0.9; headPitch = 0.28 }
+      else if (prayerStage === 'itidal') { torsoTarget = -0.02; armL = armR = -0.24; headPitch = 0.03 }
+      else if (prayerStage === 'sujud') { torsoTarget = -1.12; prayerYTarget = -0.25; legL = legR = -1.05; armL = armR = -0.05; headPitch = -0.3 }
+      else if (prayerStage === 'sitting' || prayerStage === 'final-sitting') { torsoTarget = -0.28; prayerYTarget = -0.23; legL = legR = -1.18; armL = armR = -0.32; headPitch = 0.08 }
+      else { torsoTarget = 0; prayerYTarget = 0; legL = legR = 0; armL = armR = -0.2; headPitch = 0.02 }
+      armLz = 0; armRz = 0
       headYaw = 0
     }
     if (s.lie > 0.5) { headYaw = 0; headPitch = 0; headRoll = Math.sin(t * 0.3) * 0.02 }
@@ -247,22 +256,29 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
     s.bobY = damp(s.bobY, bob, 14, delta)
     const targetY = s.lie * ((placement.height ?? 0.5) + 0.16) + (1 - s.lie) * (-0.14 * s.sit - 0.5 * s.floor)
     s.bodyY = damp(s.bodyY, targetY, 10, delta)
+    s.torsoX = damp(s.torsoX, praying ? torsoTarget : 0, 8, delta)
+    s.prayerY = damp(s.prayerY, praying ? prayerYTarget : 0, 7, delta)
     if (leftLeg.current && rightLeg.current) { leftLeg.current.rotation.x = s.legL; rightLeg.current.rotation.x = s.legR }
     if (leftArm.current && rightArm.current) {
       leftArm.current.rotation.x = s.armL; rightArm.current.rotation.x = s.armR
       leftArm.current.rotation.z = s.armLz; rightArm.current.rotation.z = s.armRz
     }
-    if (head.current) head.current.rotation.set(s.headPitch, s.headYaw, s.headRoll)
+    if (torso.current) torso.current.rotation.x = s.torsoX
+    if (head.current) {
+      head.current.rotation.set(s.headPitch, s.headYaw, s.headRoll)
+      const headY = praying && prayerStage === 'sujud' ? 1.08 : praying && (prayerStage === 'sitting' || prayerStage === 'final-sitting') ? 1.18 : 1.3
+      head.current.position.y = damp(head.current.position.y, headY, 8, delta)
+    }
     if (leftEye.current && rightEye.current) {
       const blink = (time + seed * 3) % 4.3 < 0.12 ? 0.1 : 1
       leftEye.current.scale.y = rightEye.current.scale.y = damp(leftEye.current.scale.y, s.lie > 0.5 ? 0.1 : blink, 40, delta)
     }
     if (body.current) {
       // Lying down: the body tips back so the head rests towards the pillow (local -z).
-      body.current.rotation.x = praying ? damp(body.current.rotation.x, prayerTilt, 7, delta) : -Math.PI / 2 * s.lie + s.lean * (1 - s.lie)
+      body.current.rotation.x = -Math.PI / 2 * s.lie + s.lean * (1 - s.lie)
       body.current.rotation.y = s.twist
       body.current.rotation.z = s.sway
-      body.current.position.y = s.bodyY + s.bobY + breathe
+      body.current.position.y = s.bodyY + s.bobY + breathe + s.prayerY
     }
     // If a crowd push or an awkward corner stalls a walker, recompute its route from its current position.
     const movement = progress.current
@@ -284,7 +300,7 @@ function Character({ station, placement, layout, floor, onSelect, anchor, prayer
     <group ref={body} onClick={(event) => { event.stopPropagation(); onSelect(station, null) }} onPointerOver={() => { document.body.style.cursor = 'pointer' }} onPointerOut={() => { document.body.style.cursor = '' }}>
       <mesh ref={leftLeg} position={[-0.11, 0.66, 0]} castShadow geometry={legGeometry}><meshStandardMaterial color={tint(colors.pants)} roughness={0.8}/></mesh>
       <mesh ref={rightLeg} position={[0.11, 0.66, 0]} castShadow geometry={legGeometry}><meshStandardMaterial color={tint(colors.pants)} roughness={0.8}/></mesh>
-      <RBox position={[0, 0.98, 0]} size={[0.48, 0.58, 0.3]} radius={0.07} color={tint(colors.shirt)} roughness={0.85}/>
+      <group ref={torso} position={[0, 1.2, 0]}><RBox position={[0, -0.22, 0]} size={[0.48, 0.58, 0.3]} radius={0.07} color={tint(colors.shirt)} roughness={0.85}/></group>
       <mesh ref={leftArm} position={[-0.31, 1.2, 0]} castShadow geometry={armGeometry}><meshStandardMaterial color={tint(colors.shirt)} roughness={0.85}/></mesh>
       <mesh ref={rightArm} position={[0.31, 1.2, 0]} castShadow geometry={armGeometry}><meshStandardMaterial color={tint(colors.shirt)} roughness={0.85}/></mesh>
       {/* The head pivots at the neck so it can nod, turn and tilt. */}
