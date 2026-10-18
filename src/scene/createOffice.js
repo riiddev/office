@@ -286,8 +286,8 @@ export function createOffice(host, { onSelect } = {}) {
   box(bathroom, 'bathroom mirror frame', [0.92, 1.08, 0.1], [0.85, 1.6, -1.88], mats.wood);
   box(bathroom, 'bathroom mirror', [0.78, 0.9, 0.035], [0.85, 1.61, -1.815], mats.glass);
   cylinder(bathroom, 'vanity tap', 0.035, 0.035, 0.22, [0.85, 1.08, 0.38], mats.metal, 8);
-  box(scene, 'bathroom sign', [1.15, 0.34, 0.07], [-10.5, 2.08, 6.93], mats.navy);
-  box(scene, 'bathroom sign inlay', [0.6, 0.035, 0.035], [-10.5, 2.08, 6.88], mats.lamp);
+  box(scene, 'bathroom sign', [1.15, 0.34, 0.07], [-9.0, 2.08, 6.93], mats.navy);
+  box(scene, 'bathroom sign inlay', [0.6, 0.035, 0.035], [-9.0, 2.08, 6.88], mats.lamp);
 
   // Partitioned dining room: dining table, chairs, plates, fruit and a serving counter.
   const dining = group(scene, 'dining room', [5.15, 0, 6.08]);
@@ -580,8 +580,8 @@ export function createOffice(host, { onSelect } = {}) {
     { x1: -9.16, x2: -8.04, z1: -3.08, z2: -0.12 },
     { x1: 3.78, x2: 8.03, z1: -2.48, z2: 1.02 },
     // Divider panels between lounge and gaming room, with a walk-through gap.
-    { x1: 3.45, x2: 5.32, z1: 0.91, z2: 1.19 },
-    { x1: 6.68, x2: 8.75, z1: 0.91, z2: 1.19 },
+    { x1: 3.2, x2: 5.55, z1: 0.72, z2: 1.38 },
+    { x1: 6.45, x2: 8.98, z1: 0.72, z2: 1.38 },
     { x1: 3.42, x2: 8.98, z1: 1.22, z2: 4.72 },
     // Pantry counters / fridge.
     { x1: -8.96, x2: -4.28, z1: 1.18, z2: 3.28 },
@@ -937,8 +937,34 @@ export function createOffice(host, { onSelect } = {}) {
             bossRoot.rotation.y += angleDelta * Math.min(1, delta * 6.2);
             const ease = THREE.MathUtils.clamp(distance * 1.7, 0.25, 1);
             const step = Math.min(1.45 * delta * ease, distance);
-            bossRoot.position.x += (dx / distance) * step;
-            bossRoot.position.z += (dz / distance) * step;
+            let nextBossX = bossRoot.position.x + (dx / distance) * step;
+            let nextBossZ = bossRoot.position.z + (dz / distance) * step;
+            let bossCrowded = false;
+            for (let j = 0; j < characterGroups.length; j++) {
+              const teammate = characterGroups[j];
+              const sx = nextBossX - teammate.position.x;
+              const sz = nextBossZ - teammate.position.z;
+              const separation = Math.hypot(sx, sz);
+              if (separation < 0.62) {
+                const angle = separation > 0.001 ? Math.atan2(sz, sx) : bossMotion.phase + j * 2.399;
+                const push = (0.62 - separation) * 0.58;
+                const candidateX = nextBossX + Math.cos(angle) * push;
+                const candidateZ = nextBossZ + Math.sin(angle) * push;
+                if (!navBlockedAt(candidateX, candidateZ)) {
+                  nextBossX = candidateX;
+                  nextBossZ = candidateZ;
+                } else {
+                  bossCrowded = true;
+                }
+              }
+            }
+            if (!navBlockedAt(nextBossX, nextBossZ) && !bossCrowded) {
+              bossRoot.position.x = nextBossX;
+              bossRoot.position.z = nextBossZ;
+            } else {
+              bossMotion.route = findWalkPath(bossRoot.position, { x: waypoint.x, z: waypoint.z });
+              bossMotion.pathIndex = 0;
+            }
             const stride = Math.sin(bossWave) * 0.58;
             bossLegs[0].rotation.x = stride;
             bossLegs[1].rotation.x = -stride;
@@ -1065,12 +1091,23 @@ export function createOffice(host, { onSelect } = {}) {
           const sepX = nextX - other.position.x;
           const sepZ = nextZ - other.position.z;
           const sep = Math.hypot(sepX, sepZ);
-          if (sep > 0.001 && sep < 0.56) {
+          if (sep < 0.56) {
+            const angle = sep > 0.001 ? Math.atan2(sepZ, sepX) : (i + 1) * 2.399 + j;
             const push = (0.56 - sep) * 0.45;
-            const pushedX = nextX + (sepX / sep) * push;
-            const pushedZ = nextZ + (sepZ / sep) * push;
+            const pushedX = nextX + Math.cos(angle) * push;
+            const pushedZ = nextZ + Math.sin(angle) * push;
             if (!navBlockedAt(pushedX, pushedZ)) { nextX = pushedX; nextZ = pushedZ; }
           }
+        }
+        const bossDX = nextX - bossRoot.position.x;
+        const bossDZ = nextZ - bossRoot.position.z;
+        const bossDistance = Math.hypot(bossDX, bossDZ);
+        if (bossDistance < 0.62) {
+          const angle = bossDistance > 0.001 ? Math.atan2(bossDZ, bossDX) : (i + 1) * 2.399;
+          const push = (0.62 - bossDistance) * 0.45;
+          const pushedX = nextX + Math.cos(angle) * push;
+          const pushedZ = nextZ + Math.sin(angle) * push;
+          if (!navBlockedAt(pushedX, pushedZ)) { nextX = pushedX; nextZ = pushedZ; }
         }
         if (!navBlockedAt(nextX, nextZ)) {
           character.position.x = nextX;
