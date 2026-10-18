@@ -124,9 +124,9 @@ export function createOffice(host, { onSelect } = {}) {
   box(scene, 'right wood trim', [0.32, 0.2, 19.5], [16.02, 4.22, 1.25], mats.woodLight);
 
   // A wider window wall makes the office feel bright instead of boxed in.
-  box(scene, 'window glass', [10.8, 2.45, 0.09], [-3.1, 2.55, -7.47], mats.glass, { castShadow: false });
-  for (let i = 0; i < 6; i++) box(scene, 'window mullion', [0.09, 2.55, 0.12], [-8.05 + i * 2.0, 2.55, -7.36], mats.woodLight);
-  box(scene, 'window sill', [10.95, 0.12, 0.22], [-3.1, 1.25, -7.32], mats.wood);
+  box(scene, 'window glass', [10.8, 2.45, 0.09], [-3.1, 2.55, -8.04], mats.glass, { castShadow: false });
+  for (let i = 0; i < 6; i++) box(scene, 'window mullion', [0.09, 2.55, 0.12], [-8.05 + i * 2.0, 2.55, -7.94], mats.woodLight);
+  box(scene, 'window sill', [10.95, 0.12, 0.22], [-3.1, 1.25, -7.87], mats.wood);
   const landscape = group(scene, 'outside landscape', [0, 0, -10.1]);
   sphere(landscape, 'hill', 3.5, [-5, 0.7, 0], material('#d4cf9c'), [1.4, 0.35, 0.14]);
   sphere(landscape, 'hill', 4, [1.5, 0.5, -0.1], material('#a7bd96'), [1.1, 0.35, 0.14]);
@@ -226,13 +226,13 @@ export function createOffice(host, { onSelect } = {}) {
   addPlant(22.1, 19.0, 1.15);
 
   // A shared wall board for sprint notes and a room-wide planning surface.
-  box(scene, 'sprint board frame', [4.2, 1.85, 0.16], [6.7, 2.45, -7.4], mats.wood);
-  box(scene, 'sprint board', [3.95, 1.6, 0.045], [6.7, 2.45, -7.29], mats.cream);
+  box(scene, 'sprint board frame', [4.2, 1.85, 0.16], [6.7, 2.45, -8.0], mats.wood);
+  box(scene, 'sprint board', [3.95, 1.6, 0.045], [6.7, 2.45, -7.89], mats.cream);
   for (let i = 0; i < 4; i++) {
-    box(scene, 'sprint note', [0.55, 0.32, 0.025], [5.45 + (i % 2) * 0.85, 2.55 + Math.floor(i / 2) * 0.48, -7.25],
+    box(scene, 'sprint note', [0.55, 0.32, 0.025], [5.45 + (i % 2) * 0.85, 2.55 + Math.floor(i / 2) * 0.48, -7.85],
       [mats.terracotta, mats.leafLight, mats.lamp, mats.glass][i]);
   }
-  box(scene, 'sprint marker rail', [2.5, 0.055, 0.05], [6.7, 1.63, -7.25], mats.metal);
+  box(scene, 'sprint marker rail', [2.5, 0.055, 0.05], [6.7, 1.63, -7.85], mats.metal);
 
   // Extra team wing: conference table, rolling chairs, and a place to brainstorm.
   const warRoom = group(scene, 'war room', [11.0, 0, 3.15]);
