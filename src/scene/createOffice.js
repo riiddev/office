@@ -112,7 +112,7 @@ export function createOffice(host, { onSelect } = {}) {
   box(scene, 'wood floor', [26, 0.22, 18], [0, -0.02, 1.2], mats.floor);
   box(scene, 'front step', [7, 0.22, 0.72], [0, -0.12, 10.25], mats.woodLight);
   // Broad circulation spine: keep the main route visually readable and open.
-  box(scene, 'central corridor runner', [22, 0.035, 1.18], [0, 0.105, 0.78], material('#b8b29b'));
+  box(scene, 'central corridor runner', [23.5, 0.035, 1.8], [0, 0.105, 0.72], material('#b8b29b'));
 
   // Expanded dollhouse shell: the front stays open, with a wider wing for the team.
   box(scene, 'back wall', [26, 4.3, 0.22], [0, 2.1, -7.62], mats.wall);
@@ -188,18 +188,20 @@ export function createOffice(host, { onSelect } = {}) {
   // Extra team wing: conference table, rolling chairs, and a place to brainstorm.
   const warRoom = group(scene, 'war room', [11.0, 0, 3.15]);
   box(warRoom, 'war room rug', [3.6, 0.055, 3.5], [0, 0.11, 0], material('#c9d3bd'));
-  cylinder(warRoom, 'conference table top', 1.18, 1.18, 0.16, [0, 0.96, 0], mats.woodLight, 32);
+  // Keep the conference set compact and aligned to the room rug—no chairs
+  // spilling into the dining entrance or the central walkway.
+  cylinder(warRoom, 'conference table top', 1.08, 1.08, 0.16, [0, 0.96, 0], mats.woodLight, 32);
   cylinder(warRoom, 'conference table foot', 0.24, 0.33, 0.84, [0, 0.49, 0], mats.darkWood, 16);
   for (let i = 0; i < 5; i++) {
     const a = i * Math.PI * 2 / 5;
-    const chair = group(warRoom, 'meeting chair', [Math.cos(a) * 1.28, 0, Math.sin(a) * 1.2]);
-    box(chair, 'chair seat', [0.56, 0.15, 0.54], [0, 0.57, 0], [mats.sofa, mats.terracotta, mats.navy, mats.leaf, mats.fabric][i]);
-    box(chair, 'chair back', [0.56, 0.72, 0.13], [0, 0.97, -0.19], [mats.sofa, mats.terracotta, mats.navy, mats.leaf, mats.fabric][i]);
+    const chair = group(warRoom, 'meeting chair', [Math.cos(a) * 1.22, 0, Math.sin(a) * 1.12]);
+    box(chair, 'chair seat', [0.52, 0.15, 0.5], [0, 0.57, 0], [mats.sofa, mats.terracotta, mats.navy, mats.leaf, mats.fabric][i]);
+    box(chair, 'chair back', [0.52, 0.68, 0.12], [0, 0.93, -0.18], [mats.sofa, mats.terracotta, mats.navy, mats.leaf, mats.fabric][i]);
     cylinder(chair, 'chair stem', 0.06, 0.06, 0.48, [0, 0.27, 0], mats.metal, 8);
-    box(chair, 'chair base', [0.48, 0.06, 0.45], [0, 0.06, 0], mats.metal);
+    box(chair, 'chair base', [0.44, 0.06, 0.42], [0, 0.06, 0], mats.metal);
   }
-  box(warRoom, 'team screen frame', [1.65, 1.1, 0.12], [0, 1.8, -1.32], mats.navy);
-  box(warRoom, 'team screen', [1.45, 0.88, 0.035], [0, 1.82, -1.24], material('#9ed1c0', 0.25, { emissive: '#5b9f8e', emissiveIntensity: 0.38 }));
+  box(warRoom, 'team screen frame', [1.55, 1.04, 0.12], [0, 1.75, -1.32], mats.navy);
+  box(warRoom, 'team screen', [1.35, 0.82, 0.035], [0, 1.77, -1.24], material('#9ed1c0', 0.25, { emissive: '#5b9f8e', emissiveIntensity: 0.38 }));
   addPlant(12.05, 5.75, 0.65);
 
   // The old loose pouf/table cluster was removed from the circulation spine.
@@ -501,7 +503,7 @@ export function createOffice(host, { onSelect } = {}) {
     { x: -1.65, z: 4.45, face: Math.PI, activity: 'work', dwell: 7 },
     { x: 2.5, z: 8.25, face: 0.55, activity: 'walk', dwell: 0 },
     { x: 2.15, z: 6.35, face: Math.PI / 2, activity: 'dining', dwell: 6 },
-    { x: 11.0, z: 5.62, face: Math.PI, activity: 'meeting', dwell: 6 },
+    { x: 11.0, z: 5.38, face: Math.PI, activity: 'meeting', dwell: 6 },
     { x: 3.7, z: -0.45, face: 2.3, activity: 'lounge', dwell: 5 },
     { x: -6.0, z: 3.7, face: Math.PI, activity: 'coffee', dwell: 5 },
     { x: 10.8, z: -2.8, face: 0, activity: 'review', dwell: 5 },
@@ -538,8 +540,8 @@ export function createOffice(host, { onSelect } = {}) {
     [[2.0, 0, -0.5], [3.0, 0, -0.3], [2.6, 0, 1.6], [2.0, 0, -0.5]],
     [[9.35, 0, 5.75], [11.2, 0, 5.75], [11.2, 0, 6.35], [9.35, 0, 6.35]],
     [[-7.8, 0, 3.8], [-10.6, 0, 5.3], [-10.6, 0, 5.3], [-7.8, 0, 3.8]],
-    [[6.0, 0, 2.8], [6.0, 0, 3.0], [6.2, 0, 2.8], [6.0, 0, 2.8]],
-    [[8.4, 0, -2.8], [8.4, 0, -2.3], [8.4, 0, -2.8], [9.1, 0, -2.3]],
+    [[4.2, 0, 1.8], [4.2, 0, 2.75], [5.85, 0, 2.75], [5.85, 0, 1.8]],
+    [[8.65, 0, -3.25], [8.65, 0, -0.75], [8.8, 0, -0.25], [8.65, 0, -2.8]],
     [[9.4, 0, 6.2], [11.3, 0, 6.2], [13.2, 0, 10.8], [13.2, 0, 15.45]],
     [[2.0, 0, -0.4], [2.3, 0, -0.2], [2.2, 0, 1.5], [2.0, 0, -0.4]]
   ];
@@ -607,13 +609,13 @@ export function createOffice(host, { onSelect } = {}) {
     { x1: -10.0, x2: -9.08, z1: 3.65, z2: 4.8 },
     { x1: -10.35, x2: -8.98, z1: 5.48, z2: 6.15 },
     // Meeting room furniture and chairs.
-    { x1: 9.0, x2: 12.8, z1: 1.25, z2: 5.1 },
+    { x1: 9.45, x2: 12.65, z1: 1.35, z2: 5.0 },
     // Dining room glass partitions and the table/chair cluster.
     { x1: 1.1, x2: 1.4, z1: 4.58, z2: 7.58 },
     { x1: 8.0, x2: 8.3, z1: 4.58, z2: 7.58 },
     { x1: 2.53, x2: 4.05, z1: 4.46, z2: 4.78 },
     { x1: 5.35, x2: 6.87, z1: 4.46, z2: 4.78 },
-    { x1: 2.77, x2: 6.63, z1: 4.98, z2: 7.28 },
+    { x1: 2.85, x2: 6.55, z1: 4.96, z2: 7.24 },
     // Pool water, coping, sunbeds and parasol. The surrounding deck stays walkable.
     { x1: 11.7, x2: 17.35, z1: 11.35, z2: 15.1 },
     { x1: 10.95, x2: 11.85, z1: 13.55, z2: 15.0 },
@@ -622,7 +624,7 @@ export function createOffice(host, { onSelect } = {}) {
   const navBlockedAt = (x, z) => {
     if (x < navMinX || x > navMaxX || z < navMinZ || z > navMaxZ) return true;
     if (z < 10.0 && (x < -12.48 || x > 12.48)) return true;
-    const clearance = 0.28;
+    const clearance = 0.22;
     return navBlockers.some((r) =>
       x >= r.x1 - clearance && x <= r.x2 + clearance &&
       z >= r.z1 - clearance && z <= r.z2 + clearance
